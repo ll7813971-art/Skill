@@ -26,6 +26,8 @@ export class Game {
   readonly input: Input;
   scene: Scene | null = null;
   frames = 0;
+  /** Solo pruebas: congela la simulación; se avanza con `advance()`. */
+  frozen = false;
   steps = 0;
   private last = 0;
   private acc = 0;
@@ -76,10 +78,9 @@ export class Game {
       // Limitar el salto de tiempo (pestaña en segundo plano, tirones).
       this.acc += Math.min(now - this.last, 0.25);
       this.last = now;
+      if (this.frozen) this.acc = 0;
       while (this.acc >= STEP) {
-        this.scene?.update(STEP);
-        this.input.endStep();
-        this.steps++;
+        this.step();
         this.acc -= STEP;
       }
       this.render();
@@ -87,6 +88,17 @@ export class Game {
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
+  }
+
+  step(): void {
+    this.scene?.update(STEP);
+    this.input.endStep();
+    this.steps++;
+  }
+
+  /** Solo pruebas: avanza n pasos de simulación de forma determinista. */
+  advance(n: number): void {
+    for (let i = 0; i < n; i++) this.step();
   }
 
   private render(): void {

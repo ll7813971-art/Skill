@@ -63,6 +63,16 @@ export async function openPage(browser, query, opts = {}) {
     errors,
     touch,
     debug: () => page.evaluate(() => window.__game.debug()),
+    /** Congela la simulación para avanzar paso a paso (60 pasos = 1 s). */
+    freeze: () => page.evaluate(() => { window.__game.game.frozen = true; }),
+    step: (n) => page.evaluate((k) => { window.__game.game.advance(k); return window.__game.debug(); }, n),
+    /** Centro en px CSS de un botón táctil, a partir del debug de la escena. */
+    async button(id) {
+      const d = await page.evaluate(() => window.__game.debug());
+      const b = d.buttons.find((x) => x.id === id);
+      const k = d.scale / d.dpr;
+      return [b.x * k, b.y * k];
+    },
     wait: (ms) => page.waitForTimeout(ms),
     waitFor: (fn, arg, timeout = 5000) => page.waitForFunction(fn, arg, { timeout }),
     shot: (name) => page.screenshot({ path: `${OUT}${name}.png` }),
