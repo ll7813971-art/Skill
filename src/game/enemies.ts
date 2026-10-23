@@ -144,8 +144,8 @@ export class Enemy implements Body {
 
 export interface EnemyContact {
   stomped: Enemy[];
-  /** El jugador ha tocado a un enemigo de lado o por debajo. */
-  hurt: boolean;
+  /** Enemigo que ha tocado al jugador de lado o por debajo (o null). */
+  hurtBy: Enemy | null;
 }
 
 export class Enemies {
@@ -160,7 +160,7 @@ export class Enemies {
   }
 
   update(dt: number, map: TileMap, player: Player, jumpHeld: boolean): EnemyContact {
-    const res: EnemyContact = { stomped: [], hurt: false };
+    const res: EnemyContact = { stomped: [], hurtBy: null };
     for (const e of this.list) {
       e.update(dt, map, player);
       if (!e.alive || !overlaps(player, e)) continue;
@@ -174,7 +174,7 @@ export class Enemies {
         res.stomped.push(e);
         this.stomps++;
       } else {
-        res.hurt = true;
+        res.hurtBy = e;
       }
     }
     this.list = this.list.filter((e) => !e.gone(map.height));

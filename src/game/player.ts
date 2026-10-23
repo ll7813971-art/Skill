@@ -55,7 +55,8 @@ export class Player implements Body {
     const accel = this.onGround
       ? dir !== 0 && Math.sign(dir) === Math.sign(this.vx || dir) ? MOVE.accelGround : MOVE.decelGround
       : MOVE.accelAir;
-    this.vx = approach(this.vx, target, accel * dt);
+    // Sin control (retroceso de un golpe) se conserva la velocidad recibida.
+    if (this.controlEnabled) this.vx = approach(this.vx, target, accel * dt);
 
     // Temporizadores de coyote y buffer.
     this.coyoteT = this.onGround ? MOVE.coyote : Math.max(0, this.coyoteT - dt);

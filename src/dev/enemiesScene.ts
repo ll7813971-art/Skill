@@ -40,7 +40,7 @@ export class DevEnemiesScene implements Scene {
     this.player.update(dt, input, this.map);
     const res = this.enemies.update(dt, this.map, this.player, input.jump);
     this.hurtCooldown = Math.max(0, this.hurtCooldown - dt);
-    if (res.hurt && this.hurtCooldown === 0) {
+    if (res.hurtBy && this.hurtCooldown === 0) {
       this.hurts++;
       this.hurtCooldown = 1;
     }

@@ -6,6 +6,7 @@ import { DevCollisionScene } from './collisionScene';
 import { DevCameraScene } from './cameraScene';
 import { DevCoinsScene } from './coinsScene';
 import { DevEnemiesScene } from './enemiesScene';
+import { DevLivesScene } from './livesScene';
 
 // Nivel de pruebas: una escena aislada por sistema, accesible con ?dev=<id>.
 // Añadir un sistema = añadir una entrada aquí.
@@ -17,6 +18,7 @@ export const devScenes: Record<string, { label: string; make: (g: Game) => Scene
   camera: { label: '5. Cámara', make: (g) => new DevCameraScene(g) },
   coins: { label: '6. Monedas y puntuación', make: (g) => new DevCoinsScene(g) },
   enemies: { label: '7. Enemigos', make: (g) => new DevEnemiesScene(g) },
+  lives: { label: '8. Vidas, daño y caídas', make: (g) => new DevLivesScene(g) },
 };
 
 export function showDevIndex(): void {
