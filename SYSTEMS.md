@@ -12,7 +12,7 @@ sistema tiene su escena aislada en `?dev=<id>` (índice en `?dev`).
 | # | System | Dev scene | Status | Test notes |
 |---|--------|-----------|--------|------------|
 | 1 | Bucle de juego y escalado del canvas | `?dev=loop` | done | FALLA: 404 de favicon.ico en consola → favicon inline. PASA: Chromium móvil 844x390 dpr3; t avanza, vista 831x384, canvas 2532x1170, ~60 pasos/s, re-escala al girar a vertical, consola limpia. |
-| 2 | Entrada táctil (botones en pantalla, multitoque) | `?dev=input` | pending | |
+| 2 | Entrada táctil (botones en pantalla, multitoque) | `?dev=input` | done | FALLA: al levantar un dedo seguía activo → error del arnés (CDP solo suelta los puntos listados en touchEnd); arnés corregido, juego sin cambios. PASA: toques CDP reales; izq, deslizar a der, 2º dedo salta mientras se mueve, soltar uno conserva el otro, mitad derecha entera salta, franja superior solo registra toque; botones resaltados en captura; consola limpia. |
 | 3 | Movimiento del jugador (carrera, salto ágil: altura variable, coyote time, buffer) | `?dev=movement` | pending | |
 | 4 | Colisión con tiles | `?dev=collision` | pending | |
 | 5 | Cámara (seguimiento y límites del nivel) | `?dev=camera` | pending | |

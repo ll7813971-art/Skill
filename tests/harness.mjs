@@ -44,11 +44,12 @@ export async function openPage(browser, query, opts = {}) {
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: points() });
     },
     async up(id) {
+      const p = active.get(id);
       active.delete(id);
-      // Chromium libera los puntos que ya no aparecen en la lista.
+      // Chromium libera solo los puntos que se listan en el touchEnd.
       await cdp.send('Input.dispatchTouchEvent', {
-        type: active.size ? 'touchMove' : 'touchEnd',
-        touchPoints: points(),
+        type: 'touchEnd',
+        touchPoints: [{ id, x: p.x, y: p.y }],
       });
     },
     async tap(x, y) {

@@ -1,6 +1,8 @@
 // Núcleo: canvas a pantalla completa, escalado a una altura lógica fija y
 // bucle de paso fijo (60 Hz) para que la física sea igual en cualquier móvil.
 
+import { Input } from './input';
+
 export const VIEW_H = 384; // altura lógica visible (12 tiles de 32 px)
 export const STEP = 1 / 60;
 
@@ -21,6 +23,7 @@ export interface Scene {
 export class Game {
   readonly ctx: CanvasRenderingContext2D;
   readonly view: View = { w: 0, h: VIEW_H, scale: 1, dpr: 1 };
+  readonly input: Input;
   scene: Scene | null = null;
   frames = 0;
   steps = 0;
@@ -32,6 +35,7 @@ export class Game {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas 2D no disponible');
     this.ctx = ctx;
+    this.input = new Input(canvas, this.view, (x, y) => this.toLogical(x, y));
     this.resize();
     window.addEventListener('resize', () => this.resize());
     window.addEventListener('orientationchange', () => this.resize());
@@ -50,6 +54,7 @@ export class Game {
     this.view.dpr = dpr;
     this.view.scale = this.canvas.height / VIEW_H;
     this.view.w = this.canvas.width / this.view.scale;
+    this.input?.layout();
     for (const fn of this.resizeListeners) fn();
   }
 
@@ -73,6 +78,7 @@ export class Game {
       this.last = now;
       while (this.acc >= STEP) {
         this.scene?.update(STEP);
+        this.input.endStep();
         this.steps++;
         this.acc -= STEP;
       }
