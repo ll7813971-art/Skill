@@ -2,6 +2,7 @@
 // bucle de paso fijo (60 Hz) para que la física sea igual en cualquier móvil.
 
 import { Input } from './input';
+import { drawRotateHint } from '../ui/ui';
 
 export const VIEW_H = 384; // altura lógica visible (12 tiles de 32 px)
 export const STEP = 1 / 60;
@@ -28,6 +29,8 @@ export class Game {
   frames = 0;
   /** Solo pruebas: congela la simulación; se avanza con `advance()`. */
   frozen = false;
+  /** En vertical, detener el juego y pedir girar el móvil. */
+  portraitBlock = false;
   steps = 0;
   private last = 0;
   private acc = 0;
@@ -78,7 +81,7 @@ export class Game {
       // Limitar el salto de tiempo (pestaña en segundo plano, tirones).
       this.acc += Math.min(now - this.last, 0.25);
       this.last = now;
-      if (this.frozen) this.acc = 0;
+      if (this.frozen || this.isBlocked()) this.acc = 0;
       while (this.acc >= STEP) {
         this.step();
         this.acc -= STEP;
@@ -88,6 +91,10 @@ export class Game {
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
+  }
+
+  isBlocked(): boolean {
+    return this.portraitBlock && this.view.w < this.view.h;
   }
 
   step(): void {
@@ -108,5 +115,6 @@ export class Game {
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     ctx.setTransform(view.scale, 0, 0, view.scale, 0, 0);
     this.scene?.render(ctx, view);
+    if (this.isBlocked()) drawRotateHint(ctx, view, this.frames / 60);
   }
 }

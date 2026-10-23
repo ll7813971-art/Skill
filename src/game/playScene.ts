@@ -7,6 +7,8 @@ import { Health } from './health';
 import { LEVELS, type LevelDef } from './levels';
 import { NO_INPUT, Player } from './player';
 import { TileMap, TILE } from './tilemap';
+import { drawHud, PAUSE_BUTTON } from '../ui/hud';
+import { dim, drawButton, hitButton, text, type UIButton } from '../ui/ui';
 
 export const LEVEL_BONUS = 100;
 const COMPLETE_DELAY = 1.6;
@@ -24,6 +26,7 @@ export type Sfx = 'jump' | 'land' | 'coin' | 'stomp' | 'hurt' | 'fall' | 'comple
 export interface PlayHooks {
   onComplete(): void;
   onGameOver(): void;
+  onMenu?(): void;
   sfx?(name: Sfx): void;
 }
 
@@ -57,6 +60,30 @@ export class PlayScene implements Scene {
     this.cam = new Camera(game.view, this.map.width, this.map.height);
     this.cam.snapTo(this.player);
     game.input.controlsEnabled = true;
+    // Pausar solo si la app pasa a segundo plano (llamada, cambio de app...).
+    this.onHidden = () => {
+      if (document.hidden && this.state === 'playing') this.setPaused(true);
+    };
+    document.addEventListener('visibilitychange', this.onHidden);
+  }
+
+  private onHidden: () => void;
+
+  leave(): void {
+    document.removeEventListener('visibilitychange', this.onHidden);
+  }
+
+  setPaused(on: boolean): void {
+    this.paused = on;
+    this.game.input.releaseAll();
+    this.game.input.controlsEnabled = !on;
+  }
+
+  pauseButtons(view: View): UIButton[] {
+    return [
+      { id: 'resume', label: 'Continuar', x: view.w / 2, y: view.h * 0.5, w: 220, h: 56, primary: true },
+      { id: 'menu', label: 'Salir al menú', x: view.w / 2, y: view.h * 0.5 + 72, w: 220, h: 56 },
+    ];
   }
 
   private sfx(n: Sfx): void {
@@ -69,9 +96,18 @@ export class PlayScene implements Scene {
   }
 
   update(dt: number): void {
-    if (this.paused) return;
-    this.t += dt;
     const input = this.game.input;
+    if (this.paused) {
+      const id = hitButton(this.pauseButtons(this.game.view), input.taps);
+      if (id === 'resume') this.setPaused(false);
+      else if (id === 'menu') this.hooks.onMenu?.();
+      return;
+    }
+    if (this.state === 'playing' && hitButton([PAUSE_BUTTON(this.game.view)], input.taps)) {
+      this.setPaused(true);
+      return;
+    }
+    this.t += dt;
     const p = this.player;
 
     if (this.state === 'playing') {
@@ -128,6 +164,12 @@ export class PlayScene implements Scene {
     if (this.state !== 'dead' && this.health.visible(this.t)) this.player.render(ctx);
     ctx.restore();
     this.game.input.render(ctx);
+    drawHud(ctx, view, this);
+    if (this.paused) {
+      dim(ctx, view);
+      text(ctx, 'Pausa', view.w / 2, view.h * 0.28, 44);
+      for (const b of this.pauseButtons(view)) drawButton(ctx, b);
+    }
   }
 
   private drawFlag(ctx: CanvasRenderingContext2D): void {
@@ -162,6 +204,8 @@ export class PlayScene implements Scene {
   debug() {
     const p = this.player;
     return {
+      scene: 'play', paused: this.paused, buttons: this.paused ? this.pauseButtons(this.game.view) : [PAUSE_BUTTON(this.game.view)],
+      controls: this.game.input.buttons, scale: this.game.view.scale, dpr: this.game.view.dpr,
       state: this.state, level: this.run.level, name: this.def.name, lives: this.run.lives, score: this.run.score,
       coins: this.coins.collected, coinsTotal: this.coins.total, enemies: this.enemies.list.length,
       x: p.x, y: p.y, w: p.w, h: p.h, onGround: p.onGround, flag: this.flag, mapW: this.map.width,

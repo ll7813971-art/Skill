@@ -30,7 +30,7 @@ export async function openPage(browser, query, opts = {}) {
   });
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
   await page.goto(BASE + query);
-  await page.waitForFunction(() => window.__game && window.__game.game.steps > 2);
+  await page.waitForFunction(() => window.__game && window.__game.game.frames > 2);
   const cdp = await context.newCDPSession(page);
   const active = new Map(); // id -> {x, y}
   const points = () => [...active.entries()].map(([id, p]) => ({ id, x: p.x, y: p.y }));
@@ -71,6 +71,17 @@ export async function openPage(browser, query, opts = {}) {
       const pl = window.__game.game.scene.player;
       Object.assign(pl, { x: px, y: py, vx: 0, vy: 0, onGround: false, coyoteT: 0, bufferT: 0, jumping: false });
     }, [x, y]),
+    /** Toca un botón de interfaz (por id) de la escena actual y avanza un paso. */
+    async tapUI(id) {
+      const d = await page.evaluate(() => window.__game.debug());
+      const b = d.buttons.find((x) => x.id === id);
+      if (!b) throw new Error(`No hay botón ${id} en ${d.scene}: ${d.buttons.map((x) => x.id)}`);
+      const k = d.scale / d.dpr;
+      await touch.down(98, b.x * k, b.y * k);
+      await page.evaluate(() => window.__game.game.advance(1));
+      await touch.up(98);
+      return page.evaluate(() => window.__game.debug());
+    },
     /** Centro en px CSS de un botón táctil, a partir del debug de la escena. */
     async button(id) {
       const d = await page.evaluate(() => window.__game.debug());

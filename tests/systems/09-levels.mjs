@@ -81,7 +81,7 @@ export async function run(browser, r) {
   check(r, 'sin vidas el estado pasa a fin de partida', d.state === 'dead');
   d = await p.step(100);
   const log = await p.page.evaluate(() => window.__dev.flowLog);
-  check(r, 'tras el fin de partida empieza una nueva en el nivel 1', d.level === 0 && d.lives === 3 && d.score === 0 && log.gameOvers === 1);
+  check(r, 'tras el fin de partida se muestra su pantalla', d.scene === 'gameover' && log.gameOvers === 1);
 
   // Victoria: completar el nivel 3
   const w = await openPage(browser, '?dev=levels&n=3');
@@ -92,7 +92,7 @@ export async function run(browser, r) {
   check(r, 'completar el nivel 3 marca la meta', d.state === 'complete');
   d = await w.step(100);
   const log2 = await w.page.evaluate(() => window.__dev.flowLog);
-  check(r, 'tras el nivel 3 cuenta una victoria', log2.wins === 1 && log2.completed.includes(2));
+  check(r, 'tras el nivel 3 cuenta una victoria', log2.wins === 1 && log2.completed.includes(2) && d.scene === 'win');
   check(r, 'sin errores en consola', p.errors.length === 0 && w.errors.length === 0, [...p.errors, ...w.errors].join(' | '));
   await w.close();
   await p.close();

@@ -1,6 +1,6 @@
 import { Game } from './engine/game';
 import { devScenes, showDevIndex } from './dev/index';
-import { startRun, flowLog } from './game/flow';
+import { flowLog, showMenu } from './game/flow';
 import { LEVELS } from './game/levels';
 import { Player } from './game/player';
 import { TileMap } from './game/tilemap';
@@ -28,7 +28,8 @@ if (dev === '') {
     // Módulos expuestos solo en modo pruebas (p. ej. para el validador de niveles).
     window.__dev = { LEVELS, Player, TileMap, flowLog };
   } else {
-    startRun(game);
+    game.portraitBlock = true;
+    showMenu(game);
   }
   // Gancho para las pruebas automáticas en el navegador.
   window.__game = { game, debug: () => game.scene?.debug?.() ?? {} };

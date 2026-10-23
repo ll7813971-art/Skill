@@ -7,7 +7,7 @@ import { DevCameraScene } from './cameraScene';
 import { DevCoinsScene } from './coinsScene';
 import { DevEnemiesScene } from './enemiesScene';
 import { DevLivesScene } from './livesScene';
-import { startRun } from '../game/flow';
+import { showMenu, startRun } from '../game/flow';
 
 // Nivel de pruebas: una escena aislada por sistema, accesible con ?dev=<id>.
 // Añadir un sistema = añadir una entrada aquí.
@@ -24,6 +24,14 @@ export const devScenes: Record<string, { label: string; make: (g: Game) => Scene
   levels: {
     label: '9. Niveles y meta (n=1..3)',
     make: (g) => startRun(g, Math.max(0, Number(new URLSearchParams(location.search).get('n') ?? 1) - 1)),
+  },
+  // Flujo completo con menús; ?dev=ui&portrait=1 activa el aviso de girar.
+  ui: {
+    label: '10. Interfaz y pantallas',
+    make: (g) => {
+      g.portraitBlock = new URLSearchParams(location.search).has('portrait');
+      showMenu(g);
+    },
   },
 };
 
