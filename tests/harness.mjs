@@ -66,6 +66,11 @@ export async function openPage(browser, query, opts = {}) {
     /** Congela la simulación para avanzar paso a paso (60 pasos = 1 s). */
     freeze: () => page.evaluate(() => { window.__game.game.frozen = true; }),
     step: (n) => page.evaluate((k) => { window.__game.game.advance(k); return window.__game.debug(); }, n),
+    /** Solo pruebas: coloca al jugador de la escena (coordenadas lógicas). */
+    place: (x, y) => page.evaluate(([px, py]) => {
+      const pl = window.__game.game.scene.player;
+      Object.assign(pl, { x: px, y: py, vx: 0, vy: 0 });
+    }, [x, y]),
     /** Centro en px CSS de un botón táctil, a partir del debug de la escena. */
     async button(id) {
       const d = await page.evaluate(() => window.__game.debug());
