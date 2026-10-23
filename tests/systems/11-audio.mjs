@@ -15,20 +15,22 @@ export async function run(browser, r) {
       const dur = synth(ctx, ctx.destination, 0);
       const buf = await ctx.startRendering();
       const ch = buf.getChannelData(0);
+      // Nivel medido solo mientras dura el sonido (no en todo el búfer).
+      const n = Math.min(ch.length, Math.ceil(dur * 44100));
       let sum = 0, peak = 0, lastLoud = 0;
-      for (let i = 0; i < ch.length; i++) {
+      for (let i = 0; i < n; i++) {
         const v = Math.abs(ch[i]);
         sum += v * v;
         if (v > peak) peak = v;
       }
       // Fin del sonido: última muestra por encima de −40 dB respecto al pico.
       for (let i = 0; i < ch.length; i++) if (Math.abs(ch[i]) > peak * 0.01) lastLoud = i;
-      out[name] = { rms: Math.sqrt(sum / ch.length), peak, dur, tail: lastLoud / 44100 };
+      out[name] = { rms: Math.sqrt(sum / n), peak, dur, tail: lastLoud / 44100 };
     }
     return out;
   });
   for (const [n, v] of Object.entries(levels)) {
-    check(r, `sonido «${n}» produce señal sin saturar`, v.rms > 0.005 && v.peak > 0.05 && v.peak < 1, `rms=${v.rms.toFixed(3)} pico=${v.peak.toFixed(2)}`);
+    check(r, `sonido «${n}» produce señal sin saturar`, v.rms > 0.01 && v.peak > 0.05 && v.peak < 1, `rms=${v.rms.toFixed(3)} pico=${v.peak.toFixed(2)}`);
     // La envolvente decae exponencialmente hasta −67 dB en `dur`: se oye (por
     // encima de −40 dB) al menos la mitad de ese tiempo y nunca más allá.
     check(r, `sonido «${n}» audible ≥ 50 % de su duración y sin colas`, v.tail >= v.dur * 0.5 && v.tail <= v.dur + 0.05, `envolvente ${v.dur}s, audible ${v.tail.toFixed(2)}s`);
