@@ -147,8 +147,9 @@ export class TileMap implements World {
           ctx.fillRect(x, y, TILE, 9);
           ctx.fillStyle = '#9c7a4a';
           ctx.fillRect(x, y + 9, TILE, 3);
-          ctx.fillRect(x + 4, y + 12, 3, 6);
-          ctx.fillRect(x + TILE - 7, y + 12, 3, 6);
+          // Soportes solo en los extremos de la plataforma.
+          if (this.at(c - 1, r) !== ONE_WAY) ctx.fillRect(x + 4, y + 12, 3, 6);
+          if (this.at(c + 1, r) !== ONE_WAY) ctx.fillRect(x + TILE - 7, y + 12, 3, 6);
         }
       }
     }

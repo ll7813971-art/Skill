@@ -47,6 +47,8 @@ export class Player implements Body {
   events: PlayerEvent[] = [];
   /** Permite que otros sistemas (rebote al pisar enemigos) fuercen velocidad. */
   controlEnabled = true;
+  /** Tiempo restante del aplastamiento al aterrizar (solo visual). */
+  squashT = 0;
 
   constructor(x: number, y: number) {
     this.x = x;
@@ -91,7 +93,11 @@ export class Player implements Body {
 
     world.moveBody(this, dt);
     if (this.hitCeiling) this.jumping = false;
-    if (this.onGround && !wasGround) this.events.push('land');
+    if (this.onGround && !wasGround) {
+      this.events.push('land');
+      this.squashT = 0.12;
+    }
+    this.squashT = Math.max(0, this.squashT - dt);
   }
 
   /** Impulso externo hacia arriba (p. ej. al pisar un enemigo). */
@@ -106,7 +112,11 @@ export class Player implements Body {
     const { x, y, w, h } = this;
     ctx.save();
     ctx.translate(x + w / 2, y + h);
-    ctx.scale(this.facing, 1);
+    // Estirarse al subir, aplastarse al aterrizar (conservando el volumen).
+    let sy = 1;
+    if (this.squashT > 0) sy = 1 - 0.25 * (this.squashT / 0.12);
+    else if (!this.onGround) sy = 1 + Math.min(0.15, Math.max(-0.08, -this.vy / 4000));
+    ctx.scale(this.facing / sy, sy);
     // Cuerpo
     ctx.fillStyle = '#ff5a5f';
     roundRect(ctx, -w / 2, -h, w, h, 7);

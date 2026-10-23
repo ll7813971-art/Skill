@@ -4,6 +4,7 @@ import { drawBackground } from './background';
 import { Camera } from './camera';
 import { Coins, COIN_POINTS } from './coins';
 import { Enemies, STOMP_POINTS, overlaps } from './enemies';
+import { Fx, vibrate } from './fx';
 import { Health } from './health';
 import { LEVELS, type LevelDef } from './levels';
 import { NO_INPUT, Player } from './player';
@@ -42,6 +43,7 @@ export class PlayScene implements Scene {
   readonly health: Health;
   readonly cam: Camera;
   readonly flag: { x: number; y: number };
+  readonly fx = new Fx();
   state: PlayState = 'playing';
   t = 0;
   private stateT = 0;
@@ -115,32 +117,54 @@ export class PlayScene implements Scene {
 
     if (this.state === 'playing') {
       p.update(dt, input, this.map);
-      if (p.events.includes('jump')) this.sfx('jump');
-      if (p.events.includes('land')) this.sfx('land');
+      const feetX = p.x + p.w / 2;
+      const feetY = p.y + p.h;
+      if (p.events.includes('jump')) {
+        this.sfx('jump');
+        this.fx.dust(feetX, feetY, 5);
+      }
+      if (p.events.includes('land')) {
+        this.sfx('land');
+        this.fx.dust(feetX, feetY, 7);
+      }
 
       const res = this.enemies.update(dt, this.map, p, input.jump);
-      for (let i = 0; i < res.stomped.length; i++) {
+      for (const e of res.stomped) {
         this.run.score += STOMP_POINTS;
         this.sfx('stomp');
+        this.fx.burst(e.x + e.w / 2, e.y + e.h / 2, 12, e.kind === 'walker' ? '#b28cf0' : '#7fe0c6', 150);
+        this.fx.float(e.x + e.w / 2, e.y - 6, `+${STOMP_POINTS}`, '#ffe08a');
+        this.cam.shake(2, 0.12);
       }
       this.health.update(dt, p, this.map, res.hurtBy);
       this.run.lives = this.health.lives;
-      for (const ev of this.health.events) if (ev !== 'dead') this.sfx(ev);
+      for (const ev of this.health.events) {
+        if (ev === 'dead') continue;
+        this.sfx(ev);
+        this.cam.shake(ev === 'hurt' ? 5 : 3, 0.25);
+        vibrate(ev === 'hurt' ? 60 : 120);
+        if (ev === 'hurt') this.fx.burst(p.x + p.w / 2, p.y + p.h / 2, 10, '#ff8a8a', 140);
+      }
 
-      for (let i = this.coins.update(dt, p).length; i > 0; i--) {
+      for (const c of this.coins.update(dt, p)) {
         this.run.score += COIN_POINTS;
         this.sfx('coin');
+        this.fx.burst(c.x, c.y, 8, '#ffe066', 110, 200, 3, 0.4);
+        this.fx.float(c.x, c.y - 10, `+${COIN_POINTS}`);
       }
 
       if (this.health.dead) {
         this.state = 'dead';
         this.stateT = 0;
         this.sfx('dead');
+        this.fx.burst(p.x + p.w / 2, p.y + p.h / 2, 24, '#ff5a5f', 200, 300, 4, 0.9);
       } else if (overlaps(p, this.flagBox)) {
         this.state = 'complete';
         this.stateT = 0;
         this.run.score += LEVEL_BONUS;
         this.sfx('complete');
+        this.fx.burst(this.flag.x, this.flag.y - 4 * TILE, 30, '#ffe066', 220, 250, 4, 1);
+        this.fx.float(this.flag.x, this.flag.y - 4 * TILE - 10, `+${LEVEL_BONUS}`, '#ffe08a');
       }
     } else {
       this.stateT += dt;
@@ -153,6 +177,7 @@ export class PlayScene implements Scene {
       }
     }
     this.cam.update(dt, p);
+    this.fx.update(dt);
   }
 
   render(ctx: CanvasRenderingContext2D, view: View): void {
@@ -165,6 +190,7 @@ export class PlayScene implements Scene {
     this.coins.render(ctx, x0, x1);
     this.enemies.render(ctx, x0, x1);
     if (this.state !== 'dead' && this.health.visible(this.t)) this.player.render(ctx);
+    this.fx.render(ctx);
     ctx.restore();
     this.game.input.render(ctx);
     drawHud(ctx, view, this);
@@ -212,6 +238,8 @@ export class PlayScene implements Scene {
       state: this.state, level: this.run.level, name: this.def.name, lives: this.run.lives, score: this.run.score,
       coins: this.coins.collected, coinsTotal: this.coins.total, enemies: this.enemies.list.length,
       x: p.x, y: p.y, w: p.w, h: p.h, onGround: p.onGround, flag: this.flag, mapW: this.map.width,
+      particles: this.fx.particles.length, spawned: this.fx.spawned, texts: this.fx.texts.length,
+      shake: this.cam.shakeT, squash: p.squashT,
     };
   }
 }

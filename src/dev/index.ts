@@ -35,6 +35,7 @@ export const devScenes: Record<string, { label: string; make: (g: Game) => Scene
     },
   },
   audio: { label: '11. Audio', make: (g) => new DevAudioScene(g, g.sound) },
+  polish: { label: '12. Pulido (efectos en el nivel 1)', make: (g) => startRun(g, 0) },
 };
 
 export function showDevIndex(): void {
