@@ -11,7 +11,8 @@ const HOP_SPEED = 520;
 const HOP_VX = 80;
 // Reposo en el suelo entre saltos; con ~0,6 s en el aire da un ritmo de ~1,5 s.
 const HOP_REST = 0.9;
-const HOP_RANGE = 320;
+// Solo persigue cuando el jugador ya está cerca (no nada más empezar el nivel).
+const HOP_RANGE = 240;
 const DEATH_TIME = 0.35;
 export const STOMP_BOUNCE = 400;
 export const STOMP_BOUNCE_HELD = 620;

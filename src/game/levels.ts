@@ -35,13 +35,14 @@ function pradera(): string[] {
 
 function atardecer(): string[] {
   const b = new LevelBuilder(120);
-  b.ground(0, 20).start(6).coins(9, 9, 4).hopper(16);
+  b.ground(0, 20).start(6).coins(9, 9, 4).hopper(18);
   b.coins(21, 8, 3);
   b.ground(24, 40).block(28, 9).block(29, 8, 1, 2).block(30, 7, 1, 3).coins(30, 6).coins(31, 6).walker(35);
   b.oneway(42, 8, 3).coins(42, 7, 3); // puente sobre un foso de 5
   b.ground(46, 70).hopper(52).oneway(56, 8, 3).block(60, 6, 5, 1).coins(60, 5, 5).walker(58).hopper(67);
   b.coins(71, 8, 3);
-  b.ground(74, 85).walker(78).walker(83);
+  // Bloque en la col 77: el patrullero no llega a la zona de aterrizaje del hueco.
+  b.ground(74, 85).block(77, 9).walker(81);
   b.ground(86, 95, 8).coins(88, 7, 4).hopper(93, 7);
   b.ground(99, 119).coins(102, 9, 3).walker(108).flag(114);
   return b.rows();
@@ -53,7 +54,8 @@ function noche(): string[] {
   b.coins(19, 8, 3);
   b.ground(22, 28);
   b.block(30, 8, 3, 1).coins(30, 7, 3); // isla flotante sobre un foso de 5
-  b.ground(34, 50).hopper(38).oneway(40, 7, 4).coins(40, 6, 4).hopper(44);
+  // Sin enemigo junto a la zona de aterrizaje del foso (col 34).
+  b.ground(34, 50).oneway(40, 7, 4).coins(40, 6, 4).hopper(44);
   b.block(47, 9).block(48, 8, 1, 2).block(49, 7, 1, 3).block(50, 6, 1, 4);
   b.block(51, 6, 10, 1).walker(55, 5).coins(52, 5, 2).coins(58, 5, 2); // puente alto
   b.ground(61, 80).hopper(66).walker(70).walker(75);

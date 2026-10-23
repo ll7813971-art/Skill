@@ -7,7 +7,8 @@
     "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "test": "node tests/run.mjs"
+    "test": "node tests/run.mjs",
+    "playtest": "node tests/playtest.mjs"
   },
   "devDependencies": {
     "playwright-core": "^1.63.0",

@@ -93,3 +93,89 @@ export function solveInPage(levelIdx) {
     expanded,
   };
 }
+
+// Planificador para la partida automática: desde el estado ACTUAL del jugador
+// en la escena de juego, busca una secuencia de acciones (10 pasos cada una)
+// hasta la bandera. Devuelve [{dir, jump}] o null.
+export function planInPage([maxExpand, avoid]) {
+  const sc = window.__game.game.scene;
+  const { Player } = window.__dev;
+  const map = sc.map;
+  const fb = sc.flagBox;
+  const FIELDS = ['x', 'y', 'vx', 'vy', 'onGround', 'coyoteT', 'bufferT', 'jumping', 'facing'];
+  const p = new Player(0, 0);
+  FIELDS.forEach((f) => { p[f] = sc.player[f]; });
+  const snap = () => FIELDS.map((f) => p[f]);
+  const load = (s) => FIELDS.forEach((f, i) => { p[f] = s[i]; });
+  const key = () => `${Math.round(p.x / 4)},${Math.round(p.y / 4)},${Math.round(p.vy / 50)},${Math.round(p.vx / 70)},${p.onGround ? 1 : 0}`;
+  const hitsFlag = () => p.x < fb.x + fb.w && p.x + p.w > fb.x && p.y < fb.y + fb.h && p.y + p.h > fb.y;
+  // Enemigos como peligro con posición PREDICHA en el tiempo (x + vx·t; los
+  // saltarines pueden estar hasta ~80 px más arriba). Caerles encima desde
+  // arriba sí está permitido. Se replanifica cada segundo.
+  const enemies = sc.enemies.list.filter((e) => e.alive).map((e) => ({
+    x: e.x, y: e.y, w: e.w, h: e.h, vx: e.kind === 'walker' ? e.vx : 0,
+    reach: e.kind === 'hopper' ? 60 : 8, up: e.kind === 'hopper' ? 80 : 0,
+  }));
+  const hurts = (t) => enemies.some((e) => {
+    const ex = e.x + e.vx * t - e.reach;
+    const ew = e.w + 2 * e.reach;
+    const top = e.y - e.up;
+    return p.x < ex + ew && p.x + p.w > ex && p.y < e.y + e.h && p.y + p.h > top &&
+      !(p.vy > 0 && p.y + p.h - top < 16);
+  });
+  // Preferir acciones hacia la derecha y sin salto (como un jugador).
+  const actions = [];
+  for (const dir of [1, 0, -1]) for (const jump of [0, 3, 2, 1]) actions.push({ dir, jump });
+  const nodes = [{ s: snap(), parent: -1, a: null, x: p.x, depth: 0 }];
+  const heap = [0];
+  const less = (i, j) => nodes[heap[i]].x > nodes[heap[j]].x;
+  const push = (n) => {
+    heap.push(n);
+    let i = heap.length - 1;
+    while (i > 0) { const j = (i - 1) >> 1; if (!less(i, j)) break; [heap[i], heap[j]] = [heap[j], heap[i]]; i = j; }
+  };
+  const pop = () => {
+    const top = heap[0]; const last = heap.pop();
+    if (heap.length) {
+      heap[0] = last; let i = 0;
+      for (;;) { const l = 2 * i + 1, r = l + 1; let m = i;
+        if (l < heap.length && less(l, m)) m = l; if (r < heap.length && less(r, m)) m = r;
+        if (m === i) break; [heap[i], heap[m]] = [heap[m], heap[i]]; i = m; }
+    }
+    return top;
+  };
+  const seen = new Set([key()]);
+  let expanded = 0;
+  while (heap.length && expanded < maxExpand) {
+    const ni = pop();
+    expanded++;
+    // Las zonas de peligro solo valen ~1,5 s: después los enemigos estarán en
+    // otro sitio y se replanifica.
+    const near = avoid && nodes[ni].depth < 9;
+    for (const a of actions) {
+      load(nodes[ni].s);
+      let dead = false, goal = false;
+      for (let i = 0; i < 10; i++) {
+        p.update(1 / 60, {
+          left: a.dir < 0, right: a.dir > 0,
+          jump: a.jump === 2 || a.jump === 3 || (a.jump === 1 && i < 3),
+          jumpPressed: (a.jump === 1 || a.jump === 2) && i === 0,
+        }, map);
+        if (p.y > map.height || (near && hurts((nodes[ni].depth * 10 + i) / 60))) { dead = true; break; }
+        if (hitsFlag()) { goal = true; break; }
+      }
+      if (dead) continue;
+      const k = key();
+      if (!goal && seen.has(k)) continue;
+      seen.add(k);
+      nodes.push({ s: snap(), parent: ni, a, x: p.x, depth: nodes[ni].depth + 1 });
+      if (goal) {
+        const path = [];
+        for (let i = nodes.length - 1; i > 0; i = nodes[i].parent) path.push(nodes[i].a);
+        return path.reverse();
+      }
+      push(nodes.length - 1);
+    }
+  }
+  return null;
+}

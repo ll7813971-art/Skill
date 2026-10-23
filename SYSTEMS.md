@@ -29,3 +29,16 @@ Status values: `pending` / `building` / `testing` / `done`.
 Test notes: one line per completed test — what was exercised, what was
 observed, pass or fail. Keep failed attempts in the log too (don't erase
 history), just update status once it actually passes.
+
+## Fase 6 — Montaje y playtest
+
+Todos los sistemas ya trabajan juntos en el flujo real (menú → niveles →
+victoria / fin de partida). Ajustes de diseño tras la partida completa (detalle
+en `PLAYTEST.md`), todos re-verificados con `npm test` (176 comprobaciones en
+verde) y con `npm run playtest` (8/8 victorias en desarrollo y 3/3 en el build
+de producción):
+
+- Sistema 7: alcance de persecución del saltarín 320 → 240 px.
+- Sistema 9: nivel 2, saltarín inicial col 16 → 18; bloque en la col 77 y un
+  patrullero menos tras el hueco de las cols 71–73. Nivel 3: sin saltarín
+  junto al aterrizaje del foso (col 34).
