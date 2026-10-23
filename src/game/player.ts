@@ -1,4 +1,3 @@
-import type { Input } from '../engine/input';
 import type { Body, World } from './body';
 
 // Salto "ágil": rápido y preciso. Altura variable (soltar corta el salto),
@@ -19,6 +18,16 @@ export const MOVE = {
 };
 
 export type PlayerEvent = 'jump' | 'land';
+
+/** Lo mínimo que el jugador lee de la entrada (Input lo cumple). */
+export interface PlayerInput {
+  left: boolean;
+  right: boolean;
+  jump: boolean;
+  jumpPressed: boolean;
+}
+
+export const NO_INPUT: PlayerInput = { left: false, right: false, jump: false, jumpPressed: false };
 
 export class Player implements Body {
   x: number;
@@ -44,7 +53,7 @@ export class Player implements Body {
     this.y = y;
   }
 
-  update(dt: number, input: Input, world: World): void {
+  update(dt: number, input: PlayerInput, world: World): void {
     this.events.length = 0;
     const wasGround = this.onGround;
     const dir = this.controlEnabled ? (input.right ? 1 : 0) - (input.left ? 1 : 0) : 0;

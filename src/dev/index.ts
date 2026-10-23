@@ -7,10 +7,11 @@ import { DevCameraScene } from './cameraScene';
 import { DevCoinsScene } from './coinsScene';
 import { DevEnemiesScene } from './enemiesScene';
 import { DevLivesScene } from './livesScene';
+import { startRun } from '../game/flow';
 
 // Nivel de pruebas: una escena aislada por sistema, accesible con ?dev=<id>.
 // Añadir un sistema = añadir una entrada aquí.
-export const devScenes: Record<string, { label: string; make: (g: Game) => Scene }> = {
+export const devScenes: Record<string, { label: string; make: (g: Game) => Scene | void }> = {
   loop: { label: '1. Bucle y escalado del canvas', make: (g) => new DevLoopScene(g) },
   input: { label: '2. Entrada táctil', make: (g) => new DevInputScene(g) },
   movement: { label: '3. Movimiento y salto', make: (g) => new DevMovementScene(g) },
@@ -19,6 +20,11 @@ export const devScenes: Record<string, { label: string; make: (g: Game) => Scene
   coins: { label: '6. Monedas y puntuación', make: (g) => new DevCoinsScene(g) },
   enemies: { label: '7. Enemigos', make: (g) => new DevEnemiesScene(g) },
   lives: { label: '8. Vidas, daño y caídas', make: (g) => new DevLivesScene(g) },
+  // ?dev=levels&n=2 empieza en el nivel 2.
+  levels: {
+    label: '9. Niveles y meta (n=1..3)',
+    make: (g) => startRun(g, Math.max(0, Number(new URLSearchParams(location.search).get('n') ?? 1) - 1)),
+  },
 };
 
 export function showDevIndex(): void {
