@@ -69,7 +69,7 @@ export async function openPage(browser, query, opts = {}) {
     /** Solo pruebas: coloca al jugador de la escena (coordenadas lógicas). */
     place: (x, y) => page.evaluate(([px, py]) => {
       const pl = window.__game.game.scene.player;
-      Object.assign(pl, { x: px, y: py, vx: 0, vy: 0 });
+      Object.assign(pl, { x: px, y: py, vx: 0, vy: 0, onGround: false, coyoteT: 0, bufferT: 0, jumping: false });
     }, [x, y]),
     /** Centro en px CSS de un botón táctil, a partir del debug de la escena. */
     async button(id) {
