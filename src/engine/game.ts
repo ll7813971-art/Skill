@@ -2,6 +2,7 @@
 // bucle de paso fijo (60 Hz) para que la física sea igual en cualquier móvil.
 
 import { Input } from './input';
+import { Sound } from './audio';
 import { drawRotateHint } from '../ui/ui';
 
 export const VIEW_H = 384; // altura lógica visible (12 tiles de 32 px)
@@ -25,6 +26,7 @@ export class Game {
   readonly ctx: CanvasRenderingContext2D;
   readonly view: View = { w: 0, h: VIEW_H, scale: 1, dpr: 1 };
   readonly input: Input;
+  readonly sound = new Sound();
   scene: Scene | null = null;
   frames = 0;
   /** Solo pruebas: congela la simulación; se avanza con `advance()`. */
@@ -41,6 +43,7 @@ export class Game {
     if (!ctx) throw new Error('Canvas 2D no disponible');
     this.ctx = ctx;
     this.input = new Input(canvas, this.view, (x, y) => this.toLogical(x, y));
+    this.input.onGesture(() => this.sound.unlock());
     this.resize();
     window.addEventListener('resize', () => this.resize());
     window.addEventListener('orientationchange', () => this.resize());

@@ -24,11 +24,13 @@ export function showMenu(game: Game, extra: Extra = {}): void {
         enterFullscreen();
         startRun(game, 0, extra);
       },
+      mute: () => game.sound.setMuted(!game.sound.muted),
     }),
   );
 }
 
 export function startRun(game: Game, level = 0, extra: Extra = {}): void {
+  extra = { sfx: game.sound.play, ...extra };
   const run: RunState = { level, lives: START_LIVES, score: 0 };
   const play = () => {
     game.setScene(

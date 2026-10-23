@@ -8,6 +8,7 @@ import { DevCoinsScene } from './coinsScene';
 import { DevEnemiesScene } from './enemiesScene';
 import { DevLivesScene } from './livesScene';
 import { showMenu, startRun } from '../game/flow';
+import { DevAudioScene } from './audioScene';
 
 // Nivel de pruebas: una escena aislada por sistema, accesible con ?dev=<id>.
 // Añadir un sistema = añadir una entrada aquí.
@@ -33,6 +34,7 @@ export const devScenes: Record<string, { label: string; make: (g: Game) => Scene
       showMenu(g);
     },
   },
+  audio: { label: '11. Audio', make: (g) => new DevAudioScene(g, g.sound) },
 };
 
 export function showDevIndex(): void {

@@ -51,8 +51,8 @@ export class Input {
     this.layout();
   }
 
-  /** Avisar en la primera interacción (p. ej. para desbloquear el audio). */
-  onFirstGesture(fn: () => void): void {
+  /** Avisar en cada gesto del usuario (p. ej. para desbloquear el audio). */
+  onGesture(fn: () => void): void {
     this.listeners.push(fn);
   }
 
@@ -76,7 +76,7 @@ export class Input {
 
   private onDown(e: PointerEvent): void {
     e.preventDefault();
-    for (const fn of this.listeners.splice(0)) fn();
+    for (const fn of this.listeners) fn();
     try {
       this.canvas.setPointerCapture(e.pointerId);
     } catch {
@@ -117,7 +117,7 @@ export class Input {
     const k = e.code;
     if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'KeyA', 'KeyD', 'KeyW', 'Space'].includes(k)) return;
     e.preventDefault();
-    for (const fn of this.listeners.splice(0)) fn();
+    for (const fn of this.listeners) fn();
     const isJump = k === 'Space' || k === 'ArrowUp' || k === 'KeyW';
     if (down && isJump && !this.keys.has(k)) {
       this.jumpPressed = true;

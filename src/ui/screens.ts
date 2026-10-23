@@ -18,7 +18,10 @@ abstract class MenuBase implements Scene {
     this.t += dt;
     if (this.t < 0.25) return; // evitar toques arrastrados de la pantalla anterior
     const id = hitButton(this.buttons(this.game.view), this.game.input.taps);
-    if (id) this.actions[id]?.();
+    if (id) {
+      this.game.sound.play('click');
+      this.actions[id]?.();
+    }
   }
   abstract render(ctx: CanvasRenderingContext2D, view: View): void;
   debug() {
@@ -30,7 +33,10 @@ export class MenuScene extends MenuBase {
   readonly name = 'menu';
   private hero = new Player(0, 0);
   buttons(view: View): UIButton[] {
-    return [{ id: 'play', label: 'Jugar', x: view.w / 2, y: view.h * 0.66, w: 200, h: 56, primary: true }];
+    return [
+      { id: 'play', label: 'Jugar', x: view.w / 2, y: view.h * 0.66, w: 200, h: 56, primary: true },
+      { id: 'mute', label: this.game.sound.muted ? 'Sonido: no' : 'Sonido: sí', x: view.w - 84, y: 34, w: 140, h: 40 },
+    ];
   }
   render(ctx: CanvasRenderingContext2D, view: View): void {
     drawBackground(ctx, view, LEVELS[0].theme, this.t * 40, this.t);

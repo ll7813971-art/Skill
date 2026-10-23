@@ -4,6 +4,7 @@ import { flowLog, showMenu } from './game/flow';
 import { LEVELS } from './game/levels';
 import { Player } from './game/player';
 import { TileMap } from './game/tilemap';
+import { SYNTHS } from './engine/audio';
 
 declare global {
   interface Window {
@@ -26,7 +27,7 @@ if (dev === '') {
     const scene = entry.make(game);
     if (scene) game.setScene(scene);
     // Módulos expuestos solo en modo pruebas (p. ej. para el validador de niveles).
-    window.__dev = { LEVELS, Player, TileMap, flowLog };
+    window.__dev = { LEVELS, Player, TileMap, flowLog, SYNTHS };
   } else {
     game.portraitBlock = true;
     showMenu(game);

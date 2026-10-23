@@ -1,4 +1,5 @@
 import type { Game, Scene, View } from '../engine/game';
+import type { SoundName } from '../engine/audio';
 import { drawBackground } from './background';
 import { Camera } from './camera';
 import { Coins, COIN_POINTS } from './coins';
@@ -21,7 +22,7 @@ export interface RunState {
   score: number;
 }
 
-export type Sfx = 'jump' | 'land' | 'coin' | 'stomp' | 'hurt' | 'fall' | 'complete' | 'dead';
+export type Sfx = SoundName;
 
 export interface PlayHooks {
   onComplete(): void;
@@ -99,11 +100,13 @@ export class PlayScene implements Scene {
     const input = this.game.input;
     if (this.paused) {
       const id = hitButton(this.pauseButtons(this.game.view), input.taps);
+      if (id) this.sfx('click');
       if (id === 'resume') this.setPaused(false);
       else if (id === 'menu') this.hooks.onMenu?.();
       return;
     }
     if (this.state === 'playing' && hitButton([PAUSE_BUTTON(this.game.view)], input.taps)) {
+      this.sfx('click');
       this.setPaused(true);
       return;
     }
