@@ -54,3 +54,7 @@ En móvil: dos dedos para mover la cámara y pellizcar para el zoom.
 | Silenciar | `M` |
 | Reiniciar | `R` |
 | Práctica: poner / quitar punto de control | `Z` / `X` |
+
+## Skill para Claude Code
+
+`.claude/skills/buen-programador/SKILL.md`: buenas prácticas de programación (entender, cambios pequeños, verificar, depurar, seguridad, reportar con honestidad). Se invoca con `/buen-programador`.
