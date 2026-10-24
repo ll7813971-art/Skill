@@ -802,7 +802,7 @@ local function runCar(car)
 	updateTailLights(false)
 
 	table.insert(connections, RunService.Heartbeat:Connect(function(dt)
-		if not chassis:IsDescendantOf(workspace) or chassis.Position.Y < workspace.FallenPartsDestroyHeight + 50 then
+		if not chassis:IsDescendantOf(workspace) or chassis.Position.Y < math.max(workspace.FallenPartsDestroyHeight, -400) + 50 then
 			destroy()
 			return
 		end
@@ -927,11 +927,31 @@ local function findSpawnCFrame()
 	return CFrame.new(position.X, groundY, position.Z) * CFrame.Angles(0, math.rad(CONFIG.SPAWN_YAW), 0)
 end
 
+local spawning = false
+
 spawnCar = function()
-	local car = buildCar(findSpawnCFrame() * CFrame.new(0, SPAWN_LIFT, 0))
-	calibrate(car)
-	car.chassis.Anchored = false
-	runCar(car)
+	if spawning then
+		return
+	end
+	spawning = true
+	local ok, err = xpcall(function()
+		local origin = findSpawnCFrame() * CFrame.new(0, SPAWN_LIFT, 0)
+		local car = buildCar(origin)
+		print("[CocheOxidado] Coche creado en", origin.Position)
+		calibrate(car)
+		car.chassis.Anchored = false
+		runCar(car)
+		print("[CocheOxidado] Listo. Acércate a la puerta izquierda y pulsa E.")
+	end, debug.traceback)
+	spawning = false
+	if not ok then
+		warn("[CocheOxidado] ERROR: " .. tostring(err))
+		local broken = workspace:FindFirstChild("RustyCar")
+		if broken then
+			broken:Destroy()
+		end
+		task.delay(5, spawnCar)
+	end
 end
 
 setupCollisionGroups()
