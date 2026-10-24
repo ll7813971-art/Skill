@@ -477,7 +477,6 @@ local function destroySpeedometer()
 	speedGui, speedLabel = nil, nil
 end
 
--- Controles: VehicleSeat entrega ThrottleFloat / SteerFloat entre -1 y 1
 -- Ayuda de giro: torque vertical según la dirección y la velocidad (invierte en reversa)
 local yawAttachment = Instance.new("Attachment")
 yawAttachment.Parent = chassis
@@ -492,6 +491,7 @@ local lastSpeed = 0
 local lastCrash = 0
 local smoothPitch = ENGINE_MIN_PITCH
 
+-- Controles: VehicleSeat entrega ThrottleFloat / SteerFloat entre -1 y 1
 local function applyControls()
 	local throttle = seat.ThrottleFloat
 	local steerInput = seat.SteerFloat
