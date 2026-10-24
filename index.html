@@ -20,8 +20,8 @@ button{font-family:var(--font);color:#fff;cursor:pointer;border:none;background:
 button:focus-visible{outline:3px solid #fff;outline-offset:3px}
 
 /* texto con contorno estilo GD */
-.out{text-shadow:2px 2px 0 var(--o),-2px 2px 0 var(--o),2px -2px 0 var(--o),-2px -2px 0 var(--o),0 2px 0 var(--o),0 -2px 0 var(--o),2px 0 0 var(--o),-2px 0 0 var(--o),0 4px 0 rgba(0,0,0,.35)}
-.out3{text-shadow:3px 3px 0 var(--o),-3px 3px 0 var(--o),3px -3px 0 var(--o),-3px -3px 0 var(--o),0 3px 0 var(--o),0 -3px 0 var(--o),3px 0 0 var(--o),-3px 0 0 var(--o),0 7px 0 rgba(0,0,0,.4)}
+.out{text-shadow:2.2px 0.0px 0 var(--o),2.0px 0.8px 0 var(--o),1.6px 1.6px 0 var(--o),0.8px 2.0px 0 var(--o),0.0px 2.2px 0 var(--o),-0.8px 2.0px 0 var(--o),-1.6px 1.6px 0 var(--o),-2.0px 0.8px 0 var(--o),-2.2px 0.0px 0 var(--o),-2.0px -0.8px 0 var(--o),-1.6px -1.6px 0 var(--o),-0.8px -2.0px 0 var(--o),-0.0px -2.2px 0 var(--o),0.8px -2.0px 0 var(--o),1.6px -1.6px 0 var(--o),2.0px -0.8px 0 var(--o),0 4px 1px rgba(0,0,0,.35)}
+.out3{text-shadow:3.4px 0.0px 0 var(--o),3.1px 1.3px 0 var(--o),2.4px 2.4px 0 var(--o),1.3px 3.1px 0 var(--o),0.0px 3.4px 0 var(--o),-1.3px 3.1px 0 var(--o),-2.4px 2.4px 0 var(--o),-3.1px 1.3px 0 var(--o),-3.4px 0.0px 0 var(--o),-3.1px -1.3px 0 var(--o),-2.4px -2.4px 0 var(--o),-1.3px -3.1px 0 var(--o),-0.0px -3.4px 0 var(--o),1.3px -3.1px 0 var(--o),2.4px -2.4px 0 var(--o),3.1px -1.3px 0 var(--o),0 7px 2px rgba(0,0,0,.4)}
 
 .screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:10;padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
 .screen.on{display:flex}
@@ -51,7 +51,7 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
 #menu{justify-content:space-between}
 .title{margin-top:clamp(4px,4vh,40px);text-align:center;line-height:.9}
 .title .t1{font-size:clamp(40px,9vw,112px);color:#ffe23a;letter-spacing:.03em;
-  text-shadow:4px 4px 0 #000,-4px 4px 0 #000,4px -4px 0 #000,-4px -4px 0 #000,0 4px 0 #000,0 -4px 0 #000,4px 0 0 #000,-4px 0 0 #000,0 10px 0 rgba(0,0,0,.4),0 0 30px rgba(255,200,0,.5)}
+  text-shadow:4.6px 0.0px 0 var(--o),4.2px 1.8px 0 var(--o),3.3px 3.3px 0 var(--o),1.8px 4.2px 0 var(--o),0.0px 4.6px 0 var(--o),-1.8px 4.2px 0 var(--o),-3.3px 3.3px 0 var(--o),-4.2px 1.8px 0 var(--o),-4.6px 0.0px 0 var(--o),-4.2px -1.8px 0 var(--o),-3.3px -3.3px 0 var(--o),-1.8px -4.2px 0 var(--o),-0.0px -4.6px 0 var(--o),1.8px -4.2px 0 var(--o),3.3px -3.3px 0 var(--o),4.2px -1.8px 0 var(--o),0 10px 2px rgba(0,0,0,.4),0 0 30px rgba(255,200,0,.5)}
 .title .t1 b{color:#ffb21a;font-weight:normal}
 .title .t2{font-size:clamp(15px,2.3vw,24px);color:#bff6ff;margin-top:.45em;letter-spacing:.25em}
 .mainrow{display:flex;align-items:center;gap:clamp(18px,5vw,60px)}
@@ -355,10 +355,10 @@ function bestOf(id) { const b = save.best[id] || {}; return { n: b.n | 0, p: b.p
 const PHZ = 240, DT = 1 / PHZ;
 const SPEEDS = [8.4, 10.4, 12.9, 15.6, 19.2];
 const CUBE_G = 90, CUBE_J = 20, TERM = 26;
-const SHIP_UP = 52, SHIP_DN = 44, SHIP_VU = 9, SHIP_VD = 10;
+const SHIP_UP = 38, SHIP_DN = 34, SHIP_VU = 7.5, SHIP_VD = 8.5;
 const BALL_G = 70, BALL_PUSH = 6, BALL_T = 22;
 const UFO_G = 55, UFO_J = 13, UFO_T = 16;
-const ROB_G = 90, ROB_V = 11, ROB_BOOST = 0.25, ROB_MIN = 0.06;
+const ROB_G = 90, ROB_V = 11, ROB_BOOST = 0.3, ROB_MIN = 0.06;
 const SPI_G = 80;
 const LTOL = 0.35, EPS = 1e-6, INNER = 0.15;
 const HH = { cube: .5, ship: .45, ball: .5, ufo: .45, wave: .18, robot: .5, spider: .45 };
@@ -534,13 +534,12 @@ function level1() {
   const a = mk();
   // Parte 1 — cubo
   a.S(16).S(26).S(34, 0, 2);
-  a.B(44, 0, 1, 1);
-  a.B(52, 0, 3, 1).S(55, 0, 2);
+  a.B(50, 0, 5, 1).S(57, 0, 2);
   a.B(64, 0, 2, 1).B(66, 0, 8, 2).S(70, 2);
   a.S(79, 0, 2);
   a.P(88).B(92, 2, 6, 1).S(90, 0, 9);
   a.S(110, 0, 5).O(111, 2);
-  a.S(124).B(128, 0, 1, 1);
+  a.S(122).B(129, 0, 2, 1);
   // Parte 2 — nave
   a.M(138, 'ship', 0);
   a.B(150, 0, 2, 3).B(162, 6, 2, 3).B(174, 0, 2, 4).B(186, 5, 2, 4).B(198, 0, 2, 3).S(198, 3, 2);
@@ -549,7 +548,7 @@ function level1() {
   a.M(238, 'cube', 0);
   a.S(252).B(258, 0, 2, 1).B(260, 0, 3, 2).S(265, 0, 2);
   a.S(276, 0, 2).S(285);
-  a.B(292, 0, 1, 1).B(296, 0, 1, 2).S(297, 0, 2);
+  a.B(290, 0, 3, 1).B(293, 0, 4, 2);
   a.P(306).S(308, 0, 4);
   a.S(320, 0, 2);
   return {
@@ -562,7 +561,7 @@ function level2() {
   const a = mk();
   // Cubo
   a.S(16).S(24, 0, 2);
-  a.B(32, 0, 7, 1).S(36, 1);
+  a.B(32, 0, 10, 1).S(38, 1);
   a.S(46).S(52);
   a.P(60).B(63, 2, 6, 1).S(62, 0, 8);
   a.S(78, 0, 5).O(80, 2);
@@ -581,18 +580,18 @@ function level2() {
   a.S(242).S(248, 0, 2);
   // OVNI
   a.M(258, 'ufo', 0);
-  a.B(270, 0, 2, 3).S(270, 3, 2);
-  a.B(282, 5, 2, 4);
-  a.B(294, 0, 2, 4);
-  a.B(306, 4, 2, 5).S(306, 3, 2, 1);
-  a.B(318, 0, 12, 2).B(318, 6, 12, 3).S(322, 2).S(326, 5, 1, 1);
+  a.B(270, 0, 2, 3);
+  a.B(283, 6, 2, 3);
+  a.B(296, 0, 2, 3).S(296, 3, 2);
+  a.B(309, 6, 2, 3);
+  a.B(320, 0, 10, 2).B(320, 7, 10, 2).S(324, 2).S(327, 6, 1, 1);
   a.M(336, 'cube', 0).V(340, 2);
   // Cubo rápido
   a.S(352).S(362, 0, 2);
-  a.B(372, 0, 3, 1).B(375, 0, 3, 2).S(381, 0, 2);
-  a.O(392, 2).S(390, 0, 5);
-  a.S(406, 0, 3);
-  a.S(420).S(426);
+  a.B(372, 0, 4, 1).B(376, 0, 4, 2).S(383, 0, 2);
+  a.O(394, 2).S(392, 0, 4);
+  a.S(408, 0, 2);
+  a.S(419).S(428);
   return {
     id: 'l2', name: 'Ritmo Nocturno', diff: 'Normal', face: 1, stars: 3, song: 'l2', len: 440, objs: a.o,
     colors: [{ x: 0, bg: '#4a1fb8', gr: '#33149a' }, { x: 102, bg: '#d12a2a', gr: '#9c1717' }, { x: 186, bg: '#16a07a', gr: '#0e7a5c' }, { x: 258, bg: '#e07a10', gr: '#b05a08' }, { x: 336, bg: '#2a3ad8', gr: '#1c27a8' }]
@@ -603,24 +602,24 @@ function level3() {
   const a = mk();
   // Cubo
   a.S(14).S(22, 0, 2);
-  a.B(30, 0, 3, 1).B(35, 0, 3, 2).S(38, 0, 3);
-  a.S(48, 0, 5).O(50, 2);
-  a.B(60, 0, 1, 1).S(61, 0, 2).B(63, 0, 1, 1).S(64, 0, 2).B(66, 0, 1, 1);
+  a.B(30, 0, 4, 1).B(34, 0, 4, 2).S(40, 0, 2);
+  a.S(48, 0, 4).O(50, 2);
+  a.B(59, 0, 2, 1).S(61, 0, 2).B(63, 0, 2, 1).S(65, 0, 2).B(67, 0, 2, 1);
   // Onda
   a.M(76, 'wave', 0);
   a.B(88, 0, 2, 5).B(98, 4, 2, 5).B(108, 0, 2, 5).B(118, 4, 2, 5);
   const tri = [0, 1, 2, 3, 2, 1, 0, -1, -2, -3, -2, -1];
   for (let i = 0; i < 30; i++) {
     const c = 4.5 + tri[i % 12];
-    if (c - 2 > 0) a.B(128 + i, 0, 1, c - 2);
-    if (c + 2 < 9) a.B(128 + i, c + 2, 1, 9 - (c + 2));
+    if (c - 2.5 > 0) a.B(128 + i, 0, 1, c - 2.5);
+    if (c + 2.5 < 9) a.B(128 + i, c + 2.5, 1, 9 - (c + 2.5));
   }
   // Robot
   a.M(166, 'robot', 0);
   a.S(176);
-  a.B(184, 0, 2, 3).S(190, 0, 3);
+  a.B(183, 0, 3, 3).S(190, 0, 3);
   a.B(200, 3.3, 12, .7).S(203).S(208);
-  a.B(218, 0, 1, 1).B(222, 0, 1, 2).B(226, 0, 1, 3).S(227, 0, 4);
+  a.B(217, 0, 2, 1).B(222, 0, 2, 2).B(227, 0, 2, 3).S(229, 0, 3);
   // Araña
   a.M(240, 'spider', 0);
   a.S(252, 0, 3).S(260, 7, 3, 1).S(268, 0, 3);
@@ -633,8 +632,8 @@ function level3() {
   [1, 2, 3, 4, 5, 4, 3, 2, 1, 1].forEach((h, i) => { const x = 382 + i * 3; a.B(x, 0, 3, h).B(x, h + 4, 3, 5 - h); });
   a.M(418, 'cube', 0);
   // Final
-  a.S(432).S(442, 0, 2).B(452, 0, 3, 1).B(455, 0, 3, 2).S(461, 0, 3);
-  a.S(474, 0, 3);
+  a.S(432).S(442, 0, 2).B(452, 0, 4, 1).B(456, 0, 4, 2).S(463, 0, 2);
+  a.S(475, 0, 2);
   return {
     id: 'l3', name: 'Ruta Electrónica', diff: 'Difícil', face: 2, stars: 6, song: 'l3', len: 490, objs: a.o,
     colors: [{ x: 0, bg: '#c4144e', gr: '#8e0c37' }, { x: 76, bg: '#0a8fc4', gr: '#066a93' }, { x: 166, bg: '#5a5f73', gr: '#3c4050' }, { x: 240, bg: '#7a1fc8', gr: '#55139a' }, { x: 318, bg: '#d6401a', gr: '#a02c0f' }, { x: 418, bg: '#11a65a', gr: '#0b7a41' }]
@@ -883,11 +882,21 @@ function drawCube(g, S, ic) {
   g.restore();
 }
 function drawShip(g, S, ic) {
-  g.save(); g.scale(S, S); g.lineJoin = 'round'; g.lineWidth = .07; g.strokeStyle = '#000';
-  g.save(); g.translate(-.1, -.3); drawCube(g, .52, ic); g.restore();
-  g.fillStyle = ic.c2; poly(g, [-.7, -.08, -.92, -.44, -.48, -.08]); g.fill(); g.stroke();
-  g.fillStyle = ic.c1; poly(g, [-.82, -.08, .5, -.08, .84, .14, .52, .36, -.64, .36, -.82, .14]); g.fill(); g.stroke();
-  g.fillStyle = ic.c2; poly(g, [-.56, .07, .6, .07, .48, .21, -.56, .21]); g.fill(); g.lineWidth = .045; g.stroke();
+  g.save(); g.scale(S, S); g.translate(0, .04); g.lineJoin = 'round'; g.lineCap = 'round'; g.strokeStyle = '#000';
+  // cubo piloto en la cabina
+  g.save(); g.translate(-.08, -.22); drawCube(g, .46, ic); g.restore();
+  // aleta trasera
+  g.lineWidth = .07; g.fillStyle = ic.c2;
+  poly(g, [-.64, 0, -.8, -.36, -.52, -.36, -.2, 0]); g.fill(); g.stroke();
+  // casco
+  g.fillStyle = ic.c1;
+  poly(g, [-.78, .0, .3, .0, .62, .1, .8, .22, .58, .4, -.62, .4, -.8, .22]); g.fill(); g.stroke();
+  // franja y brillo
+  g.fillStyle = ic.c2; g.lineWidth = .045;
+  poly(g, [-.6, .15, .62, .15, .7, .22, .54, .29, -.6, .29]); g.fill(); g.stroke();
+  g.fillStyle = 'rgba(255,255,255,.45)'; poly(g, [-.7, .04, .28, .04, .5, .1, -.7, .1]); g.fill();
+  // tobera
+  g.fillStyle = '#333'; g.lineWidth = .05; rrect(g, -.92, .1, .16, .22, .04); g.fill(); g.stroke();
   g.restore();
 }
 function drawBall(g, S, ic) {
@@ -1056,7 +1065,11 @@ function render(dt) {
       if (p.mode === 'cube') {
         if (p.grounded) { const q = Math.PI / 2, tgt = Math.round(sc.rot / q) * q; sc.rot = lerp(sc.rot, tgt, 1 - Math.exp(-dt * 30)); }
         else sc.rot += p.gs * 7.1 * dt;
-      } else if (p.mode === 'ship' || p.mode === 'wave') sc.rot = -Math.atan2(p.vy, spd) * (p.mode === 'ship' ? .75 : 1);
+      } else if (p.mode === 'ship') {
+        const touch = p.grounded || Math.abs(p.vy) < .01;
+        const tgt = touch ? 0 : clamp(-Math.atan2(p.vy, spd) * .85, -.45, .45);
+        sc.rot = lerp(sc.rot, tgt, 1 - Math.exp(-dt * 14));
+      } else if (p.mode === 'wave') sc.rot = -Math.atan2(p.vy, spd);
       else if (p.mode === 'ufo') sc.rot = clamp(-p.vy * .02, -.3, .3);
       else if (p.mode === 'ball') sc.rot += p.gs * spd / .5 * dt;
       else sc.rot = 0;
@@ -1069,7 +1082,7 @@ function render(dt) {
         if (p.grounded && (p.mode === 'cube' || p.mode === 'ball' || p.mode === 'robot' || p.mode === 'spider'))
           sc.parts.push({ x: p.x - .45, y: fy + p.gs * .05, vx: -2 - Math.random() * 2, vy: p.gs * (1 + Math.random() * 2), life: .35, max: .35, sz: .1 + Math.random() * .08, col: rgba(shade(colorAt(L, p.x).bg, .6), 1), g: p.gs * 6, r: 0 });
         if (p.mode === 'ship' || p.mode === 'ufo')
-          sc.parts.push({ x: p.x - .6, y: p.y + (p.mode === 'ship' ? -p.gs * .05 : -p.gs * .25), vx: -3 - Math.random() * 2, vy: (Math.random() - .5) * 2, life: .4, max: .4, sz: .12 + Math.random() * .12, col: Math.random() < .5 ? ic.c2 : '#ffd84a', g: 0, r: 0 });
+          sc.parts.push({ x: p.x - (p.mode === 'ship' ? .72 : .6), y: p.y + (p.mode === 'ship' ? -p.gs * .12 : -p.gs * .25), vx: -3 - Math.random() * 2, vy: (Math.random() - .5) * 2, life: .4, max: .4, sz: .12 + Math.random() * .12, col: Math.random() < .5 ? ic.c2 : '#ffd84a', g: 0, r: 0 });
       }
       if (p.mode === 'wave') { sc.trail.push(p.x, p.y); if (sc.trail.length > 140) sc.trail.splice(0, 2); }
       else if (sc.trail.length) sc.trail.length = 0;
@@ -1084,11 +1097,11 @@ function render(dt) {
   const bgTop = shade(col.bg, .12), bgBot = shade(col.bg, -.35);
   const bgg = g.createLinearGradient(0, 0, 0, H); bgg.addColorStop(0, rgba(bgTop)); bgg.addColorStop(1, rgba(bgBot));
   g.fillStyle = bgg; g.fillRect(0, 0, W, H);
-  // cuadros de fondo con paralaje
-  const T = U * 4.2, ox = -((camX * U * .12) % T) - T, oy = ((camY * U * .1) % T);
-  g.lineWidth = Math.max(1, U * .05);
-  for (let x = ox, ix = Math.floor(camX * .12 * U / T); x < W + T; x += T, ix++) {
-    for (let y = H + oy, iy = 0; y > -T; y -= T, iy++) {
+  // cuadros de fondo fijos en la pantalla (no se desplazan ni cambian)
+  const T = Math.max(W, H) / 7.5;
+  g.lineWidth = Math.max(1, T * .012);
+  for (let ix = 0, x = 0; x < W; ix++, x += T) {
+    for (let iy = 0, y = H; y > 0; iy++, y -= T) {
       const k = (ix + iy) & 1;
       g.fillStyle = k ? 'rgba(0,0,0,.09)' : 'rgba(255,255,255,.035)';
       g.fillRect(x + T * .06, y - T * .94, T * .88, T * .88);
@@ -1143,10 +1156,14 @@ function render(dt) {
   if (sc.trail.length > 3 && !p.dead) {
     const ic = iconColors();
     g.lineJoin = 'round'; g.lineCap = 'round';
-    g.beginPath(); g.moveTo(X(sc.trail[0]), Y(sc.trail[1]));
-    for (let i = 2; i < sc.trail.length; i += 2) g.lineTo(X(sc.trail[i]), Y(sc.trail[i + 1]));
-    g.strokeStyle = ic.c2; g.globalAlpha = .85; g.lineWidth = U * .24; g.stroke();
-    g.strokeStyle = '#fff'; g.globalAlpha = .9; g.lineWidth = U * .08; g.stroke(); g.globalAlpha = 1;
+    const n = sc.trail.length / 2;
+    for (let i = 1; i < n; i++) {
+      const k = i / n, x0 = X(sc.trail[i * 2 - 2]), y0 = Y(sc.trail[i * 2 - 1]), x1 = X(sc.trail[i * 2]), y1 = Y(sc.trail[i * 2 + 1]);
+      g.globalAlpha = k * .9; g.strokeStyle = ic.c2; g.lineWidth = U * (.06 + .22 * k);
+      g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      g.globalAlpha = k; g.strokeStyle = '#fff'; g.lineWidth = U * (.02 + .07 * k); g.stroke();
+    }
+    g.globalAlpha = 1;
   }
   // jugador
   if (!p.dead) {
