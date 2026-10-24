@@ -42,6 +42,7 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
   background:radial-gradient(circle at 50% 35%,#7fe0ff,#1d7fe0 70%);box-shadow:inset 0 -6px 0 rgba(0,0,0,.25),inset 0 4px 0 rgba(255,255,255,.35),0 6px 0 rgba(0,0,0,.45);transition:transform .1s,filter .15s}
 .rbtn:hover{filter:brightness(1.12);transform:scale(1.05)}
 .rbtn:active{transform:scale(.94)}
+.rbtn.orange{background:radial-gradient(circle at 50% 35%,#ffcf6a,#e2700d 70%)}
 .rbtn.pink{background:radial-gradient(circle at 50% 35%,#ff9df0,#c12aa5 70%)}
 .rbtn.small{width:48px;height:48px;border-width:3px}
 .rbtn span{font-size:clamp(28px,4.5vw,40px);line-height:1}
@@ -218,6 +219,10 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
       <button class="rbtn" id="bHelp" aria-label="Cómo jugar"><span class="out">?</span></button>
       <div class="mlabel out">Cómo jugar</div>
     </div>
+    <div class="mcol">
+      <button class="rbtn orange" id="bEditor" aria-label="Editor de niveles"><span class="out">✎</span></button>
+      <div class="mlabel out">Crear</div>
+    </div>
   </div>
   <div class="bottombar">
     <div style="display:flex;gap:10px">
@@ -376,6 +381,7 @@ try {
     if (s.icon && typeof s.icon === 'object') Object.assign(save.icon, s.icon);
     if (typeof s.muted === 'boolean') save.muted = s.muted;
     if (s.stats && typeof s.stats === 'object') Object.assign(save.stats, s.stats);
+    if (Array.isArray(s.custom)) save.custom = s.custom.filter(c => c && Array.isArray(c.objs));
     if (s.settings && typeof s.settings === 'object') for (const k in DEFAULT_SETTINGS) if (typeof s.settings[k] === typeof DEFAULT_SETTINGS[k]) save.settings[k] = s.settings[k];
   }
 } catch (e) { /* sin almacenamiento: se juega igual */ }
@@ -1235,16 +1241,29 @@ function leg(g, pts, c) {
 }
 function drawRobot(g, S, ic, st) {
   g.save(); g.scale(S, S);
-  const ph = (st.t || 0) * 16, air = !st.ground;
+  const ph = (st.t || 0) * 16, air = !st.ground, boost = !!st.boost, sq = st.squash || 0;
+  // aterrizaje: el cuerpo se aplasta y las rodillas se doblan
+  const bodyDy = sq * .1, bodySy = 1 - sq * .16, bodySx = 1 + sq * .1;
   for (let k = 0; k < 2; k++) {
-    const x = k ? .16 : -.18, a = air ? (k ? .1 : -.12) : Math.sin(ph + k * Math.PI) * .22;
-    leg(g, [x, .02, x + a * .5 - .05, .25, x + a, .44], ic.c2);
-    g.fillStyle = '#000'; g.fillRect(x + a - .12, .42, .26, .08);
+    const x = k ? .16 : -.18;
+    let pts, fy;
+    if (boost) {                  // impulso: piernas estiradas hacia abajo, pies juntos
+      fy = .5; pts = [x, .02, x * .8, .27, x * .55, fy];
+    } else if (air) {             // cayendo: piernas recogidas hacia delante
+      fy = .32; pts = [x, .02, x + .2, .16, x + .06, fy];
+    } else {                      // corriendo (y agachado al aterrizar)
+      const a = Math.sin(ph + k * Math.PI) * .22 * (1 - sq);
+      fy = .44; pts = [x, .02 + bodyDy, x + a * .5 - .05 + (k ? .1 : -.1) * sq, .25 + bodyDy * .5, x + a, fy];
+    }
+    leg(g, pts, ic.c2);
+    g.fillStyle = '#000'; g.fillRect(pts[4] - .12, fy - .02, .26, .08);
   }
+  g.save(); g.translate(0, .08 + bodyDy); g.scale(bodySx, bodySy * (boost ? 1.06 : 1)); g.translate(0, -.08);
   g.lineWidth = .07; g.strokeStyle = '#000'; g.fillStyle = ic.c1; rrect(g, -.42, -.5, .84, .58, .1); g.fill(); g.stroke();
   g.fillStyle = ic.c2; g.lineWidth = .05; g.fillRect(-.06, -.36, .4, .2); g.strokeRect(-.06, -.36, .4, .2);
-  g.fillStyle = '#000'; g.fillRect(.14, -.32, .12, .12);
+  g.fillStyle = '#000'; g.fillRect(.14, boost ? -.34 : -.32, .12, boost ? .08 : .12);
   g.fillStyle = ic.c2; g.fillRect(-.34, -.06, .5, .07);
+  g.restore();
   g.restore();
 }
 function drawSpider(g, S, ic, st) {
@@ -1406,6 +1425,12 @@ function render(dt) {
       else sc.rot = 0;
       // partículas de estela
       const ic = iconColors();
+      // robot: fuego en los pies mientras impulsa y aplastamiento al aterrizar
+      if (p.mode === 'robot') {
+        if (p.grounded && !sc.wasGround) { sc.squash = 1; addParts(sc, p.x, p.y - p.gs * .5, 6, ['rgba(255,255,255,.75)'], 2.2, .25, .12); }
+        if (p.boost && CFG.particles) for (let k = 0; k < 3; k++) sc.parts.push({ x: p.x - .05 + (Math.random() - .5) * .45, y: p.y - p.gs * .55, vx: -2.5 + (Math.random() - .5) * 2, vy: -p.gs * (4 + Math.random() * 4), life: .28, max: .28, sz: .12 + Math.random() * .14, col: ['#fff6a0', '#ffc02a', '#ff7a1a', ic.c2][Math.random() * 4 | 0], g: 0, r: Math.random() * TAU });
+      }
+      sc.wasGround = p.grounded; sc.squash = Math.max(0, (sc.squash || 0) - dt * 7);
       sc.dust -= dt;
       if (sc.dust <= 0 && CFG.particles) {
         sc.dust = .035;
@@ -1515,7 +1540,7 @@ function render(dt) {
     if (scl > 0) {
       g.save(); g.translate(X(p.x), Y(p.y)); g.scale(scl, scl);
       if (sc.flash > 0) { g.shadowColor = sc.flashCol; g.shadowBlur = U * .8 * sc.flash; }
-      drawIcon(g, p.mode, U, iconColors(), { rot: sc.rot, flip: p.gs < 0, t: sc.anim, ground: p.grounded });
+      drawIcon(g, p.mode, U, iconColors(), { rot: sc.rot, flip: p.gs < 0, t: sc.anim, ground: p.grounded, boost: p.mode === 'robot' && p.boost, squash: sc.squash });
       g.restore();
     }
   }
@@ -1834,7 +1859,7 @@ function drawPortal(g, o, X, Y, t, passed) {
 //  ESTADO DEL JUEGO
 // =====================================================================
 let state = 'menu', scene = null, selLevel = 0, garageMode = 'cube';
-const MENU_STATES = new Set(['menu', 'levels', 'garage', 'help']);
+const MENU_STATES = new Set(['menu', 'levels', 'garage', 'help', 'editor']);
 let settingsFrom = 'menu';
 // el juego está congelado en pausa o con los ajustes abiertos desde la pausa
 function gameFrozen() { return state === 'pause' || (state === 'settings' && settingsFrom === 'pause'); }
@@ -1857,19 +1882,21 @@ function demoTick(sc) {
   s.ev.length = 0;
 }
 
-function startLevel(idx, practice) {
+function startLevel(idx, practice) { selLevel = idx; startWith(LEVELS[idx], practice); }
+function startWith(L, practice, opts = {}) {
   AU.init();
-  selLevel = idx;
-  scene = makeScene(LEVELS[idx], practice, false);
-  scene.attemptX = 7;
+  scene = makeScene(L, practice, false);
+  scene.attemptX = 7; scene.editorTest = !!opts.editorTest;
   save.stats.attempts++; persist();
   input.clear();
   setState('play');
-  AU.play(LEVELS[idx].song); AU.fx('start');
+  AU.play(L.song); AU.fx('start');
 }
+function startCustom(cl, practice) { startWith(buildLevel(customDef(cl)), practice); }
 function respawn(sc) {
   let s;
   if (sc.practice && sc.cps.length) { s = clone(sc.cps[sc.cps.length - 1].s); s.ev = []; s.p.held = false; s.p.buf = false; }
+  else if (sc.startState) { s = clone(sc.startState); s.ev = []; }
   else s = newSim(sc.L);
   sc.sim = s; sc.attempts++; save.stats.attempts++;
   sc.attemptX = s.p.x + 7; sc.rot = 0; sc.trail.length = 0; sc.deadT = 0; sc.cpT = s.p.t; sc.cpCheck = 0;
@@ -1898,7 +1925,7 @@ function gameTick(sc) {
   if (p.won) {
     sc.winT += DT; p.x += SPEEDS[p.spd] * DT * .5;
     if (sc.winT > .45 && !sc.fw) { sc.fw = true; for (let i = 0; i < 4; i++) setTimeout(() => AU.fx('pop'), i * 170); for (let i = 0; i < 4; i++) addParts(sc, sc.L.len - 6 + i * 2.5, 3 + Math.random() * 5, 26, ['#ffe23a', '#ff52d8', '#52ff8a', '#3fc8ff', '#fff'], 7, 1.1, .2, 4); }
-    if (sc.winT > 1.5 && !sc.wonShown) { sc.wonShown = true; showComplete(); }
+    if (sc.winT > 1.5 && !sc.wonShown) { sc.wonShown = true; if (sc.editorTest) backToEditor(!sc.practice && !sc.startState); else showComplete(); }
     return;
   }
   const hold = input.held || input.latch; input.latch = false;
@@ -1921,7 +1948,8 @@ function gameTick(sc) {
         save.stats.jumps += s.jumps; s.jumps = 0; persist();
         break;
       }
-      case 'jump': if (p.mode === 'cube' || p.mode === 'robot') addParts(sc, p.x - .3, p.y - p.gs * .5, 5, ['rgba(255,255,255,.8)'], 2.5, .3, .12); AU.fx(p.mode === 'ufo' ? 'ufo' : 'jump'); break;
+      case 'jump': if (p.mode === 'cube') addParts(sc, p.x - .3, p.y - p.gs * .5, 5, ['rgba(255,255,255,.8)'], 2.5, .3, .12);
+        if (p.mode === 'robot') { for (let k = 0; k < 12 && CFG.particles; k++) { const a = Math.PI * (.15 + Math.random() * .7); sc.parts.push({ x: p.x, y: p.y - p.gs * .5, vx: Math.cos(a) * 5 * (Math.random() < .5 ? -1 : 1), vy: -p.gs * Math.sin(a) * 2, life: .35, max: .35, sz: .12 + Math.random() * .1, col: ['#fff6a0', '#ffb02a', '#ffffff'][k % 3], g: 0, r: 0 }); } sc.rings.push({ x: p.x, y: p.y - p.gs * .5, r0: .2, r1: 1, t: 0, max: .22, col: '#ffd84a' }); } AU.fx(p.mode === 'ufo' ? 'ufo' : 'jump'); break;
       case 'flip': sc.rings.push({ x: p.x, y: p.y, r0: .3, r1: 1, t: 0, max: .25, col: ic.c2 }); AU.fx('flip'); break;
       case 'orb': case 'pad': {
         const o = e.a, c = ORB_COL[o.c]; sc.rings.push({ x: o.x + .5, y: o.y + .5, r0: .4, r1: 1.4, t: 0, max: .35, col: c });
@@ -1959,12 +1987,12 @@ function gameTick(sc) {
 let last = performance.now(), acc = 0;
 function frame(now) {
   let dt = (now - last) / 1000; last = now; if (!(dt > 0)) dt = 0; if (dt > .1) dt = .1;
-  if (scene && !gameFrozen() && !window.__gdFreeze) {
+  if (scene && !gameFrozen() && !window.__gdFreeze && state !== 'editor') {
     acc += dt; let n = 0;
     while (acc >= DT && n < 40) { acc -= DT; n++; if (scene.demo) demoTick(scene); else gameTick(scene); }
     if (n >= 40) acc = 0;
   }
-  render(dt);
+  if (state === 'editor') edRender(now / 1000); else render(dt);
   if (state === 'play' && scene && !scene.demo) updateHud();
   if (state === 'garage') drawGaragePreview(now / 1000);
   requestAnimationFrame(frame);
@@ -1989,6 +2017,7 @@ function setState(st) {
   }
   if (st === 'levels') renderLevelCard();
   if (st === 'settings') renderSettings();
+  if (st === 'editor') { cv.style.cursor = 'crosshair'; } else cv.style.cursor = '';
   if (st === 'play') applyHudSettings();
   if (st === 'pause') renderPause();
   input.clear();
@@ -2032,7 +2061,7 @@ function showComplete() {
   $('#cName').textContent = sc.L.name + ' · ' + sc.L.diff;
   const t = sc.sim.p.t, mm = Math.floor(t / 60), ss = Math.floor(t % 60);
   $('#cStats').innerHTML = `<div>Intentos<b>${sc.attempts}</b></div><div>Saltos<b>${sc.sim.jumps}</b></div><div>Tiempo<b>${mm}:${String(ss).padStart(2, '0')}</b></div>${sc.practice ? '' : `<div>Estrellas<b>★ ${sc.L.stars}</b></div>`}`;
-  $('#cNext').style.display = selLevel < LEVELS.length - 1 ? '' : 'none';
+  $('#cNext').style.display = !sc.L.custom && selLevel < LEVELS.length - 1 ? '' : 'none';
   setState('complete');
 }
 function togglePause() {
@@ -2191,11 +2220,578 @@ function objCanvas(c, k) {
   } finally { U = saveU; }
 }
 
+// =====================================================================
+//  EDITOR DE NIVELES
+//  Toda su interfaz se dibuja en el canvas: botones, paneles, teclado,
+//  selector de colores… No usa elementos ni diálogos del navegador.
+// =====================================================================
+const ED_TABS = [
+  { name: 'Bloques', items: [
+    { label: 'Bloque', o: { k: 'B', w: 1, h: 1 } },
+    { label: 'Ancho', o: { k: 'B', w: 3, h: 1 } },
+    { label: 'Columna', o: { k: 'B', w: 1, h: 3 } },
+    { label: 'Losa', o: { k: 'B', w: 1, h: .5 } },
+    { label: 'Plataforma', o: { k: 'B', w: 6, h: 1 } },
+  ] },
+  { name: 'Peligros', items: [
+    { label: 'Pincho', o: { k: 'S', f: 0 } },
+    { label: 'Colgante', o: { k: 'S', f: 1 } },
+    { label: 'Pequeño', o: { k: 's', f: 0 } },
+    { label: 'Peq. arriba', o: { k: 's', f: 1 } },
+    { label: 'Sierra', o: { k: 'W', r: .8 } },
+    { label: 'Sierra M', o: { k: 'W', r: 1.2 } },
+    { label: 'Sierra G', o: { k: 'W', r: 1.6 } },
+  ] },
+  { name: 'Saltos', items: [
+    { label: 'Pad', o: { k: 'P', c: 'y', f: 0 } },
+    { label: 'Pad rosa', o: { k: 'P', c: 'p', f: 0 } },
+    { label: 'Pad azul', o: { k: 'P', c: 'b', f: 0 } },
+    { label: 'Pad techo', o: { k: 'P', c: 'y', f: 1 } },
+    { label: 'Orbe', o: { k: 'O', c: 'y' } },
+    { label: 'Orbe rosa', o: { k: 'O', c: 'p' } },
+    { label: 'Orbe azul', o: { k: 'O', c: 'b' } },
+  ] },
+  { name: 'Portales', items: [
+    ...MODES.map(m => ({ label: MODE_NAME[m], o: { k: 'M', mode: m } })),
+    { label: 'Gravedad ↓', o: { k: 'G', g: 1 } },
+    { label: 'Gravedad ↑', o: { k: 'G', g: -1 } },
+    { label: 'x0,5', o: { k: 'V', v: 0 } }, { label: 'x1', o: { k: 'V', v: 1 } }, { label: 'x2', o: { k: 'V', v: 2 } },
+    { label: 'x3', o: { k: 'V', v: 3 } }, { label: 'x4', o: { k: 'V', v: 4 } },
+  ] },
+  { name: 'Decorar', items: [
+    { label: 'Color', o: { k: 'C', bg: '#d12a2a' } },
+    { label: 'Anillo', o: { k: 'D', t: 'ring', a: 1.3 } },
+    { label: 'Cadena', o: { k: 'D', t: 'chain', a: 2 } },
+    { label: 'Flecha', o: { k: 'D', t: 'arrow', a: 1 } },
+  ] },
+];
+const ED_TOOLS = [['build', 'Poner'], ['select', 'Elegir'], ['erase', 'Borrar'], ['pan', 'Mover']];
+const ED_COLORS = ['#2a64ff', '#1846d8', '#12a3a3', '#16a07a', '#11a65a', '#7a8a10', '#e0a01f', '#e07a10', '#d6401a', '#d12a2a', '#c4144e', '#ff2f86', '#e01f9e', '#9a2cff', '#5a28b0', '#2a1f7a', '#0a8fc4', '#3a0606', '#1a1a2a', '#5a5f73'];
+const ED_THEMES = [[null, 'Clásico'], ['space', 'Espacio'], ['neon', 'Neón'], ['digital', 'Digital'], ['snow', 'Nieve'], ['ember', 'Brasas']];
+const ED_SONGS = ['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'l8', 'menu'];
+const songLabel = id => id === 'menu' ? 'Menú' : (LEVELS.find(L => L.song === id) || {}).name || id;
+const groundOf = bg => '#' + shade(hexRgb(bg), -.28).map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+
+if (!Array.isArray(save.custom)) save.custom = [];
+const ED = { mode: 'list', lvl: null, tool: 'build', tab: 0, item: 0, sel: null, cx: -4, cy: -2.5, u: 40, half: false,
+  undo: [], redo: [], ptrs: new Map(), drag: null, hover: null, strip: 0, overlay: null, msg: '', msgT: 0, listScroll: 0, delArm: null, kbTarget: null };
+const EUI = { hits: [] };
+let EK = 1;
+
+function edToast(m) { ED.msg = m; ED.msgT = 2.2; }
+function edNewLevel() {
+  const n = save.custom.length + 1, bg = ED_COLORS[(n * 3) % ED_COLORS.length];
+  const cl = { id: 'c' + Date.now().toString(36), name: 'Mi nivel ' + n, song: ED_SONGS[(n - 1) % 8], bg, gr: groundOf(bg), theme: null, speed: 1, verified: false, objs: [] };
+  save.custom.push(cl); persist(); return cl;
+}
+function edOpen(cl) {
+  ED.lvl = cl; ED.mode = 'edit'; ED.sel = null; ED.undo = []; ED.redo = []; ED.overlay = null; ED.u = Math.round(U * .9); ED.cx = -4; ED.cy = -2.5; ED.tool = 'build';
+}
+function edSave() { persist(); }
+function edSnap() { if (ED.lvl) ED.lvl.verified = false; ED.undo.push(JSON.stringify(ED.lvl.objs)); if (ED.undo.length > 300) ED.undo.shift(); ED.redo.length = 0; }
+function edUndo() { if (!ED.undo.length) return; ED.redo.push(JSON.stringify(ED.lvl.objs)); ED.lvl.objs = JSON.parse(ED.undo.pop()); ED.sel = null; edSave(); }
+function edRedo() { if (!ED.redo.length) return; ED.undo.push(JSON.stringify(ED.lvl.objs)); ED.lvl.objs = JSON.parse(ED.redo.pop()); ED.sel = null; edSave(); }
+
+// convierte un nivel guardado en un nivel jugable
+function customDef(cl) {
+  const objs = [], colors = [{ x: 0, bg: cl.bg, gr: cl.gr }];
+  for (const o of cl.objs) { if (o.k === 'C') colors.push({ x: o.x, bg: o.bg, gr: groundOf(o.bg) }); else objs.push(edMaterial(o)); }
+  colors.sort((a, b) => a.x - b.x);
+  let len = 30; for (const o of objs) len = Math.max(len, o.x + (o.w || 1) + 14);
+  return { id: cl.id, name: cl.name, diff: 'Creado por ti', face: 0, stars: 0, song: cl.song, len: Math.ceil(len), objs, theme: cl.theme, accent: '#3ff6ff', colors, speed: cl.speed, custom: true };
+}
+// objeto del editor → objeto del motor (con todas las propiedades que espera)
+function edMaterial(o) {
+  const m = Object.assign({}, o);
+  if (m.k === 'W') { m.cx = m.x + .5; m.cy = m.y + .5; m.x = m.cx - m.r; m.y = m.cy - m.r; m.w = m.h = m.r * 2; }
+  else if (m.k === 'M') { m.w = 1; m.h = 3; m.cf = 0; m.ch = 0; }
+  else if (m.k === 'G' || m.k === 'V') { m.w = 1; m.h = 3; }
+  else if (m.k !== 'B') { m.w = 1; m.h = 1; }
+  return m;
+}
+// caja que ocupa un objeto en el editor (para elegirlo o borrarlo)
+function edBox(o) {
+  if (o.k === 'B') return [o.x, o.y, o.w, o.h];
+  if (o.k === 'W') return [o.x + .5 - o.r, o.y + .5 - o.r, o.r * 2, o.r * 2];
+  if (o.k === 'M' || o.k === 'G' || o.k === 'V') return [o.x, o.y, 1, 3];
+  return [o.x, o.y, 1, 1];
+}
+function edAt(wx, wy) {
+  const objs = ED.lvl.objs;
+  for (let i = objs.length - 1; i >= 0; i--) { const [x, y, w, h] = edBox(objs[i]); if (wx >= x && wx < x + w && wy >= y && wy < y + h) return i; }
+  return -1;
+}
+function edPlace(wx, wy) {
+  const it = ED_TABS[ED.tab].items[ED.item], st = ED.half ? .5 : 1;
+  const x = Math.floor(wx / st) * st, y = Math.max(-2, Math.floor(wy / st) * st);
+  const o = Object.assign({ x, y }, JSON.parse(JSON.stringify(it.o)));
+  if (o.k === 'C') o.y = Math.max(y, 0);
+  // no se apilan dos objetos iguales en el mismo sitio
+  if (ED.lvl.objs.some(q => q.k === o.k && q.x === o.x && q.y === o.y && q.f === o.f && q.w === o.w && q.h === o.h)) return false;
+  ED.lvl.objs.push(o); return true;
+}
+
+// ---------------- dibujo de la interfaz ----------------
+function uiText(g, txt, x, y, size, color = '#fff', align = 'center') {
+  g.font = `${Math.round(size)}px ${CANVAS_FONT}`; g.textAlign = align; g.textBaseline = 'middle'; g.lineJoin = 'round';
+  g.lineWidth = Math.max(2, size * .22); g.strokeStyle = '#000'; g.strokeText(txt, x, y); g.fillStyle = color; g.fillText(txt, x, y);
+}
+function fitText(g, txt, size, maxW) { g.font = `${Math.round(size)}px ${CANVAS_FONT}`; while (txt.length > 3 && g.measureText(txt).width > maxW) txt = txt.slice(0, -2) + '…'; return txt; }
+function uiPanel(g, x, y, w, h, col = 'rgba(14,20,52,.94)') { rrect(g, x, y, w, h, 14 * EK); g.fillStyle = col; g.fill(); g.lineWidth = 3 * EK; g.strokeStyle = '#000'; g.stroke(); g.lineWidth = 1.5 * EK; g.strokeStyle = 'rgba(255,255,255,.18)'; rrect(g, x + 3 * EK, y + 3 * EK, w - 6 * EK, h - 6 * EK, 11 * EK); g.stroke(); }
+function uiBtn(g, x, y, w, h, label, fn, o = {}) {
+  const base = o.on ? '#4fd12a' : (o.color || '#3b52c4');
+  const gr = g.createLinearGradient(0, y, 0, y + h); gr.addColorStop(0, rgba(shade(hexRgb(base), .25))); gr.addColorStop(1, base);
+  rrect(g, x, y, w, h, Math.min(h * .3, 12 * EK)); g.fillStyle = o.disabled ? '#3a3f55' : gr; g.fill();
+  g.lineWidth = (o.on ? 3 : 2.5) * EK; g.strokeStyle = o.on ? '#fff' : '#000'; g.stroke();
+  if (o.draw) o.draw(g, x, y, w, h);
+  else if (label) uiText(g, fitText(g, label, o.size || 15 * EK, w - 8 * EK), x + w / 2, y + h / 2 + 1, o.size || 15 * EK, o.disabled ? '#99a' : '#fff');
+  if (fn && !o.disabled) EUI.hits.push({ x, y, w, h, fn, label: label || o.id || '' });
+}
+// iconos dibujados a mano para no depender de fuentes
+function icoArrow(g, cx, cy, s, dir) { g.save(); g.translate(cx, cy); g.scale(dir, 1); g.beginPath(); g.moveTo(s * .45, -s * .45); g.lineTo(-s * .2, 0); g.lineTo(s * .45, s * .45); g.lineWidth = s * .28; g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#000'; g.stroke(); g.lineWidth = s * .16; g.strokeStyle = '#fff'; g.stroke(); g.restore(); }
+function icoUndo(g, cx, cy, s, dir) { g.save(); g.translate(cx, cy); g.scale(dir, 1); g.beginPath(); g.arc(s * .05, s * .1, s * .38, Math.PI * 1.05, Math.PI * .25, false); g.lineCap = 'round'; g.lineWidth = s * .26; g.strokeStyle = '#000'; g.stroke(); g.lineWidth = s * .14; g.strokeStyle = '#fff'; g.stroke(); poly(g, [-s * .55, -s * .15, -s * .1, -s * .05, -s * .42, s * .3]); g.fillStyle = '#fff'; g.fill(); g.lineWidth = s * .06; g.strokeStyle = '#000'; g.stroke(); g.restore(); }
+function icoPlay(g, cx, cy, s) { poly(g, [cx - s * .3, cy - s * .4, cx + s * .42, cy, cx - s * .3, cy + s * .4]); g.fillStyle = '#e9ff52'; g.fill(); g.lineJoin = 'round'; g.lineWidth = s * .12; g.strokeStyle = '#000'; g.stroke(); }
+function icoGear(g, cx, cy, s) { g.save(); g.translate(cx, cy); g.beginPath(); for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, r = i % 2 ? s * .32 : s * .44; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.closePath(); g.fillStyle = '#fff'; g.fill(); g.lineWidth = s * .08; g.strokeStyle = '#000'; g.stroke(); g.beginPath(); g.arc(0, 0, s * .13, 0, TAU); g.fillStyle = '#3b52c4'; g.fill(); g.stroke(); g.restore(); }
+function icoPM(g, cx, cy, s, plus) { g.fillStyle = '#fff'; g.strokeStyle = '#000'; g.lineWidth = s * .07; const t = s * .16, l = s * .4; g.beginPath(); g.rect(cx - l, cy - t / 2, l * 2, t); if (plus) g.rect(cx - t / 2, cy - l, t, l * 2); g.fill(); g.stroke(); if (plus) { g.fillRect(cx - l + 1, cy - t / 2 + 1, l * 2 - 2, t - 2); } }
+
+// dibuja un objeto del editor con las funciones del juego (escala = px por bloque)
+function edDrawObj(g, o, X, Y, sc, t, col) {
+  const m = edMaterial(o);
+  switch (m.k) {
+    case 'B': drawBlocks(g, [m], X, Y, col); break;
+    case 'S': case 's': drawSpike(g, m, X, Y); break;
+    case 'W': drawSaw(g, m, X, Y, t); break;
+    case 'P': drawPad(g, m, X, Y, 0, t); break;
+    case 'O': drawOrb(g, m, X, Y, 0, t); break;
+    case 'M': case 'G': case 'V': drawPortal(g, m, X, Y, t, false); break;
+    case 'D': drawDeco(g, Object.assign({}, m, { y: m.t === 'chain' ? m.y + 1 : m.y + .5 }), X, Y, col, t); break;
+    case 'C': {
+      const cx = X(m.x + .5), cy = Y(m.y + .5), r = U * .42;
+      g.beginPath(); g.arc(cx, cy, r, 0, TAU); g.fillStyle = m.bg; g.fill(); g.lineWidth = U * .08; g.strokeStyle = '#fff'; g.stroke();
+      g.beginPath(); g.arc(cx, cy, r * .45, 0, TAU); g.fillStyle = groundOf(m.bg); g.fill();
+      g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = Math.max(1, U * .04); g.setLineDash([U * .15, U * .12]); g.beginPath(); g.moveTo(cx, 0); g.lineTo(cx, H); g.stroke(); g.setLineDash([]);
+      break;
+    }
+  }
+}
+function edPreview(g, it, x, y, w, h, t) {
+  const o = Object.assign({ x: 0, y: 0 }, it.o), [bx, by, bw, bh] = edBox(o);
+  const saveU = U; U = Math.min((w * .78) / Math.max(bw, 1), (h * .78) / Math.max(bh, 1), h * .5);
+  const X = wx => x + w / 2 + (wx - (bx + bw / 2)) * U, Y = wy => y + h / 2 - (wy - (by + bh / 2)) * U;
+  g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
+  try { edDrawObj(g, o, X, Y, null, t, { bg: [60, 90, 200], gr: [30, 50, 160] }); } finally { U = saveU; }
+  g.restore();
+}
+
+function edLayout() {
+  EK = clamp(Math.min(W, H * 1.7) / DPR / 900, .72, 1.15) * DPR;
+  const top = 52 * EK, bottom = 132 * EK;
+  return { top, bottom, area: { x: 0, y: top, w: W, h: Math.max(60, H - top - bottom) } };
+}
+
+function edRender(t) {
+  const g = ctx; g.setTransform(1, 0, 0, 1, 0, 0); EUI.hits = [];
+  ED.msgT = Math.max(0, ED.msgT - 1 / 60);
+  if (ED.mode === 'list') edRenderList(g, t); else edRenderEdit(g, t);
+  if (ED.overlay) edRenderOverlay(g, t);
+  if (ED.msgT > 0) {
+    // aviso en una cápsula abajo, sin tapar botones
+    g.globalAlpha = Math.min(1, ED.msgT * 2); g.font = `${Math.round(20 * EK)}px ${CANVAS_FONT}`;
+    const tw = g.measureText(ED.msg).width + 40 * EK, th = 42 * EK, ty = H - (ED.mode === 'edit' ? edLayout().bottom : 0) - th - 14 * EK;
+    rrect(g, (W - tw) / 2, ty, tw, th, th / 2); g.fillStyle = 'rgba(0,0,0,.75)'; g.fill(); g.lineWidth = 2 * EK; g.strokeStyle = '#ffe23a'; g.stroke();
+    uiText(g, ED.msg, W / 2, ty + th / 2 + 1, 20 * EK, '#ffe23a'); g.globalAlpha = 1;
+  }
+}
+
+// ---------------- lista de niveles propios ----------------
+function edRenderList(g, t) {
+  const bgg = g.createLinearGradient(0, 0, 0, H); bgg.addColorStop(0, '#2a3a9a'); bgg.addColorStop(1, '#101a4a'); g.fillStyle = bgg; g.fillRect(0, 0, W, H);
+  g.strokeStyle = 'rgba(255,255,255,.05)'; g.lineWidth = 2 * EK; const T = 90 * EK;
+  for (let x = -((t * 20 * EK) % T); x < W; x += T) for (let y = 0; y < H; y += T) g.strokeRect(x + 6 * EK, y + 6 * EK, T - 12 * EK, T - 12 * EK);
+  const pad = 14 * EK, narrow = W / DPR < 720;
+  uiBtn(g, pad, pad, 46 * EK, 46 * EK, '', () => { setState('menu'); }, { id: 'menu', color: '#2f9a12', draw: (g, x, y, w, h) => icoArrow(g, x + w / 2, y + h / 2, h * .5, 1) });
+  uiText(g, 'Mis niveles', W / 2, pad + 23 * EK, 30 * EK);
+  // en pantallas estrechas los botones van en una segunda fila
+  const bw = narrow ? (W - pad * 3) / 2 : Math.min(200 * EK, W * .3), by0 = narrow ? pad * 2 + 46 * EK : pad;
+  uiBtn(g, W - pad - bw, by0, bw, 46 * EK, '+ Nuevo nivel', () => { const cl = edNewLevel(); edOpen(cl); AU.fx('select'); }, { color: '#2f9a12' });
+  uiBtn(g, W - pad * 2 - bw * 2, by0, bw, 46 * EK, 'Pegar código', () => edImport(), { color: '#7a3fc4' });
+  const top = by0 + 46 * EK + pad, list = save.custom;
+  if (!list.length) {
+    uiText(g, 'Todavía no has creado ningún nivel.', W / 2, H * .45, 20 * EK);
+    uiText(g, 'Pulsa «+ Nuevo nivel» para empezar.', W / 2, H * .45 + 34 * EK, 16 * EK, '#cfe0ff');
+    return;
+  }
+  const rowH = (narrow ? 118 : 74) * EK, maxScroll = Math.max(0, list.length * (rowH + 10 * EK) - (H - top - pad));
+  ED.listScroll = clamp(ED.listScroll, 0, maxScroll);
+  g.save(); g.beginPath(); g.rect(0, top, W, H - top); g.clip();
+  EUI.hits.push({ x: 0, y: top, w: W, h: H - top, fn: null, scrollList: true });
+  list.forEach((cl, i) => {
+    const y = top + i * (rowH + 10 * EK) - ED.listScroll, x = pad, w = W - pad * 2;
+    if (y > H || y + rowH < top) return;
+    uiPanel(g, x, y, w, rowH);
+    const b = bestOf(cl.id), nx = x + 18 * EK, bh = 44 * EK;
+    const btnW = narrow ? (w - 24 * EK - 4 * 6 * EK) / 5 : Math.min(108 * EK, w * .14);
+    const bx = narrow ? x + 12 * EK : x + w - (btnW + 8 * EK) * 5 - 6 * EK, by = narrow ? y + rowH - bh - 12 * EK : y + (rowH - bh) / 2;
+    const textW = narrow ? w - 36 * EK : bx - nx - 10 * EK;
+    uiText(g, fitText(g, cl.name, 22 * EK, textW), nx, y + 24 * EK, 22 * EK, '#fff', 'left');
+    uiText(g, fitText(g, `${cl.objs.length} objetos · récord ${b.n}%${cl.verified ? ' · verificado ✓' : ''}`, 13 * EK, textW), nx, y + 50 * EK, 13 * EK, cl.verified ? '#8dff6a' : '#cfe0ff', 'left');
+    const armed = ED.delArm === cl.id, step = btnW + (narrow ? 6 : 8) * EK;
+    [['Editar', '#2f9a12', () => edOpen(cl)], ['Jugar', '#e2700d', () => startCustom(cl, false)], ['Práctica', '#1c72dc', () => startCustom(cl, true)],
+     ['Copiar', '#7a3fc4', () => edExport(cl)], [armed ? '¿Seguro?' : 'Borrar', armed ? '#ff2020' : '#8a1a2a', () => { if (!armed) { ED.delArm = cl.id; setTimeout(() => { if (ED.delArm === cl.id) ED.delArm = null; }, 3000); } else { save.custom = save.custom.filter(q => q !== cl); persist(); ED.delArm = null; edToast('Nivel borrado'); } }]]
+      .forEach(([lab, colr, fn], k) => uiBtn(g, bx + k * step, by, btnW, bh, lab, () => { AU.fx('click'); fn(); }, { color: colr, size: 14 * EK }));
+  });
+  g.restore();
+}
+function edExport(cl) {
+  try {
+    const code = 'GDH1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ name: cl.name, song: cl.song, bg: cl.bg, gr: cl.gr, theme: cl.theme, speed: cl.speed, objs: cl.objs }))));
+    navigator.clipboard.writeText(code).then(() => edToast('Código copiado'), () => edToast('No se pudo copiar'));
+  } catch (e) { edToast('No se pudo copiar'); }
+}
+function edImport() {
+  try {
+    navigator.clipboard.readText().then(txt => {
+      try {
+        if (!txt.startsWith('GDH1:')) throw 0;
+        const d = JSON.parse(decodeURIComponent(escape(atob(txt.slice(5)))));
+        if (!Array.isArray(d.objs)) throw 0;
+        const cl = edNewLevel(); Object.assign(cl, { name: String(d.name || cl.name).slice(0, 24), song: ED_SONGS.includes(d.song) ? d.song : cl.song, bg: d.bg || cl.bg, gr: d.gr || cl.gr, theme: d.theme || null, speed: d.speed | 0 || 1, objs: d.objs.filter(o => o && typeof o.k === 'string' && Number.isFinite(o.x) && Number.isFinite(o.y)) });
+        persist(); edToast('Nivel importado');
+      } catch (e) { edToast('El portapapeles no tiene un código de nivel'); }
+    }, () => edToast('No se pudo leer el portapapeles'));
+  } catch (e) { edToast('No se pudo leer el portapapeles'); }
+}
+
+// ---------------- pantalla de edición ----------------
+function edRenderEdit(g, t) {
+  const Lay = edLayout(), A = Lay.area, cl = ED.lvl;
+  const col = { bg: hexRgb(cl.bg), gr: hexRgb(cl.gr) };
+  THEME = cl.theme; ACCENT = '#3ff6ff'; BEAT = 0;
+  // mundo
+  const X = wx => A.x + (wx - ED.cx) * ED.u, Y = wy => A.y + A.h - (wy - ED.cy) * ED.u;
+  g.save(); g.beginPath(); g.rect(A.x, A.y, A.w, A.h); g.clip();
+  const bgg = g.createLinearGradient(0, A.y, 0, A.y + A.h); bgg.addColorStop(0, rgba(shade(col.bg, .1))); bgg.addColorStop(1, rgba(shade(col.bg, -.35)));
+  g.fillStyle = bgg; g.fillRect(A.x, A.y, A.w, A.h);
+  const st = ED.half ? .5 : 1, x0 = Math.floor(ED.cx), x1 = Math.ceil(ED.cx + A.w / ED.u), y0 = Math.floor(ED.cy), y1 = Math.ceil(ED.cy + A.h / ED.u);
+  g.lineWidth = 1;
+  for (let x = Math.floor(ED.cx / st) * st; x <= x1; x += st) { g.strokeStyle = x % 5 === 0 ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.08)'; g.beginPath(); g.moveTo(X(x), A.y); g.lineTo(X(x), A.y + A.h); g.stroke(); }
+  for (let y = Math.floor(ED.cy / st) * st; y <= y1; y += st) { g.strokeStyle = y % 5 === 0 ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.08)'; g.beginPath(); g.moveTo(A.x, Y(y)); g.lineTo(A.x + A.w, Y(y)); g.stroke(); }
+  // suelo, inicio y final
+  const gy = Y(0); if (gy < A.y + A.h) { g.fillStyle = rgba(col.gr, .9); g.fillRect(A.x, gy, A.w, A.y + A.h - gy); g.fillStyle = '#fff'; g.fillRect(A.x, gy - 1.5 * EK, A.w, 3 * EK); }
+  g.fillStyle = 'rgba(80,255,120,.8)'; g.fillRect(X(0) - 2 * EK, A.y, 4 * EK, A.h);
+  const def = customDef(cl);
+  g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(X(def.len) - 2 * EK, A.y, 4 * EK, A.h);
+  uiText(g, 'INICIO', X(0) + 6 * EK, A.y + 16 * EK, 13 * EK, '#8dff8a', 'left'); uiText(g, 'FINAL', X(def.len) + 6 * EK, A.y + 16 * EK, 13 * EK, '#fff', 'left');
+  // objetos
+  const saveU = U; U = ED.u;
+  try {
+    const vis = [];
+    for (const o of cl.objs) { const [bx, by, bw, bh] = edBox(o); if (bx + bw < ED.cx - 2 || bx > ED.cx + A.w / ED.u + 2 || by + bh < ED.cy - 3 || by > ED.cy + A.h / ED.u + 3) continue; vis.push(o); }
+    for (const o of vis) if (o.k === 'D' || o.k === 'C') edDrawObj(g, o, X, Y, null, t, col);
+    drawBlocks(g, vis.filter(o => o.k === 'B'), X, Y, col);
+    for (const o of vis) if (o.k !== 'B' && o.k !== 'D' && o.k !== 'C') edDrawObj(g, o, X, Y, null, t, col);
+    // seleccionado
+    if (ED.sel != null && cl.objs[ED.sel]) {
+      const [bx, by, bw, bh] = edBox(cl.objs[ED.sel]);
+      g.setLineDash([6 * EK, 4 * EK]); g.lineWidth = 3 * EK; g.strokeStyle = '#ffe23a'; g.strokeRect(X(bx) - 3 * EK, Y(by + bh) - 3 * EK, bw * ED.u + 6 * EK, bh * ED.u + 6 * EK); g.setLineDash([]);
+    }
+    // vista previa al pasar el ratón
+    if (ED.tool === 'build' && ED.hover && !ED.overlay) {
+      const it = ED_TABS[ED.tab].items[ED.item], o = Object.assign({ x: Math.floor(ED.hover[0] / st) * st, y: Math.floor(ED.hover[1] / st) * st }, it.o);
+      g.globalAlpha = .45; edDrawObj(g, o, X, Y, null, t, col); g.globalAlpha = 1;
+    }
+  } finally { U = saveU; }
+  g.restore();
+  EUI.hits.push({ x: A.x, y: A.y, w: A.w, h: A.h, fn: null, world: true });
+
+  // barra superior
+  g.fillStyle = 'rgba(10,14,40,.95)'; g.fillRect(0, 0, W, Lay.top); g.fillStyle = '#000'; g.fillRect(0, Lay.top - 2 * EK, W, 2 * EK);
+  const bs = 42 * EK, gap = 6 * EK, by = (Lay.top - bs) / 2;
+  uiBtn(g, gap, by, bs, bs, '', () => { edSave(); ED.mode = 'list'; ED.sel = null; }, { id: 'atras', color: '#2f9a12', draw: (g, x, y, w, h) => icoArrow(g, x + w / 2, y + h / 2, h * .5, 1) });
+  const right = [
+    ['probar', () => edTest(false), (g, x, y, w, h) => icoPlay(g, x + w / 2, y + h / 2, h * .62), '#e2700d'],
+    ['aquí', () => edTest(true), (g, x, y, w, h) => { icoPlay(g, x + w * .42, y + h / 2, h * .5); g.fillStyle = '#fff'; g.fillRect(x + w * .7, y + h * .25, w * .09, h * .5); }, '#b0500a'],
+    ['ajustes', () => { ED.overlay = 'settings'; }, (g, x, y, w, h) => icoGear(g, x + w / 2, y + h / 2, h * .7)],
+    ['zoom+', () => edZoom(1.25), (g, x, y, w, h) => icoPM(g, x + w / 2, y + h / 2, h * .62, true)],
+    ['zoom-', () => edZoom(.8), (g, x, y, w, h) => icoPM(g, x + w / 2, y + h / 2, h * .62, false)],
+    ['rejilla', () => { ED.half = !ED.half; edToast(ED.half ? 'Rejilla de medio bloque' : 'Rejilla de 1 bloque'); }, (g, x, y, w, h) => uiText(g, ED.half ? '½' : '1', x + w / 2, y + h / 2 + 1, h * .5), ED.half ? '#4fd12a' : null],
+    ['rehacer', () => edRedo(), (g, x, y, w, h) => icoUndo(g, x + w / 2, y + h / 2, h * .62, -1)],
+    ['deshacer', () => edUndo(), (g, x, y, w, h) => icoUndo(g, x + w / 2, y + h / 2, h * .62, 1)],
+  ];
+  right.forEach(([id, fn, draw, colr], i) => uiBtn(g, W - (i + 1) * (bs + gap), by, bs, bs, '', fn, { id, draw, color: colr, disabled: (id === 'deshacer' && !ED.undo.length) || (id === 'rehacer' && !ED.redo.length) }));
+  const nameW = W - right.length * (bs + gap) - bs - gap * 4;
+  uiBtn(g, bs + gap * 2, by, Math.max(40 * EK, nameW), bs, cl.name + '  ✎', () => { ED.overlay = 'keyboard'; ED.kbFrom = null; }, { color: '#1f2a66', size: 17 * EK });
+
+  // panel inferior: herramientas, pestañas y objetos
+  const py = H - Lay.bottom;
+  g.fillStyle = 'rgba(10,14,40,.95)'; g.fillRect(0, py, W, Lay.bottom); g.fillStyle = '#000'; g.fillRect(0, py, W, 2 * EK);
+  const tw = 64 * EK, th = (Lay.bottom - 18 * EK) / 2;
+  ED_TOOLS.forEach(([id, lab], i) => uiBtn(g, gap + (i % 2) * (tw + gap), py + gap * 1.5 + Math.floor(i / 2) * (th + gap), tw, th, lab, () => { ED.tool = id; if (id !== 'select') ED.sel = null; }, { on: ED.tool === id, size: 14 * EK }));
+  const sx = gap * 3 + tw * 2, sw = W - sx - gap, tabH = 30 * EK, tabW = sw / ED_TABS.length;
+  ED_TABS.forEach((tb, i) => uiBtn(g, sx + i * tabW + 2 * EK, py + gap, tabW - 4 * EK, tabH, tb.name, () => { ED.tab = i; ED.item = 0; ED.strip = 0; ED.tool = 'build'; }, { on: ED.tab === i, size: 13 * EK, color: '#26337a' }));
+  const iy = py + gap * 2 + tabH, ih = Lay.bottom - tabH - gap * 3.5, iw = ih * .95, items = ED_TABS[ED.tab].items;
+  const maxStrip = Math.max(0, items.length * (iw + gap) - sw); ED.strip = clamp(ED.strip, 0, maxStrip);
+  g.save(); g.beginPath(); g.rect(sx, iy - 4 * EK, sw, ih + 8 * EK); g.clip();
+  EUI.hits.push({ x: sx, y: iy, w: sw, h: ih, fn: null, strip: true });
+  items.forEach((it, i) => {
+    const x = sx + i * (iw + gap) - ED.strip;
+    if (x > W || x + iw < sx) return;
+    uiBtn(g, x, iy, iw, ih, '', () => { ED.item = i; ED.tool = 'build'; AU.fx('click'); }, { id: 'item:' + it.label, on: ED.item === i && ED.tool === 'build', color: '#1f2a66', draw: (g, x, y, w, h) => { edPreview(g, it, x + 3 * EK, y + 3 * EK, w - 6 * EK, h - 22 * EK, t); uiText(g, fitText(g, it.label, 11 * EK, w - 4 * EK), x + w / 2, y + h - 10 * EK, 11 * EK); } });
+  });
+  g.restore();
+
+  // propiedades del objeto elegido
+  if (ED.tool === 'select' && ED.sel != null && cl.objs[ED.sel]) edRenderProps(g, A, cl.objs[ED.sel]);
+  // ayuda breve
+  if (!cl.objs.length && !ED.overlay) uiText(g, ED.tool === 'build' ? 'Toca la rejilla para poner el objeto elegido' : '', A.x + A.w / 2, A.y + 30 * EK, 15 * EK, '#ffe23a');
+}
+
+function edRenderProps(g, A, o) {
+  const w = 190 * EK, rowH = 38 * EK, gap = 6 * EK, rows = [];
+  const mod = fn => () => { edSnap(); fn(); edSave(); };
+  const step = ED.half ? .5 : 1;
+  if (o.k === 'B') {
+    rows.push(['Ancho ' + o.w, mod(() => o.w = Math.max(step, o.w - step)), mod(() => o.w += step)]);
+    rows.push(['Alto ' + o.h, mod(() => o.h = Math.max(.5, o.h - .5)), mod(() => o.h += .5)]);
+  }
+  if (o.k === 'W') rows.push(['Tamaño ' + o.r.toFixed(1), mod(() => o.r = Math.max(.4, +(o.r - .2).toFixed(1))), mod(() => o.r = Math.min(4, +(o.r + .2).toFixed(1)))]);
+  if (o.k === 'D' && o.t !== 'arrow') rows.push(['Tamaño ' + o.a.toFixed(1), mod(() => o.a = Math.max(.5, +(o.a - .3).toFixed(1))), mod(() => o.a = Math.min(6, +(o.a + .3).toFixed(1)))]);
+  const single = [];
+  if (o.k === 'S' || o.k === 's' || o.k === 'P') single.push(['Girar', mod(() => o.f = o.f ? 0 : 1)]);
+  if (o.k === 'P' || o.k === 'O') single.push(['Color: ' + { y: 'amarillo', p: 'rosa', b: 'azul' }[o.c], mod(() => o.c = { y: 'p', p: 'b', b: 'y' }[o.c])]);
+  if (o.k === 'M') single.push(['Vehículo: ' + MODE_NAME[o.mode], mod(() => o.mode = MODES[(MODES.indexOf(o.mode) + 1) % MODES.length])]);
+  if (o.k === 'G') single.push([o.g === 1 ? 'Gravedad normal' : 'Gravedad invertida', mod(() => o.g = -o.g)]);
+  if (o.k === 'V') single.push(['Velocidad ' + ['x0,5', 'x1', 'x2', 'x3', 'x4'][o.v], mod(() => o.v = (o.v + 1) % 5)]);
+  if (o.k === 'D') single.push(['Tipo: ' + { ring: 'anillo', chain: 'cadena', arrow: 'flecha' }[o.t], mod(() => o.t = { ring: 'chain', chain: 'arrow', arrow: 'ring' }[o.t])]);
+  if (o.k === 'C') single.push(['Elegir color', () => { ED.overlay = 'color'; }]);
+  single.push(['Duplicar', mod(() => { const c = JSON.parse(JSON.stringify(o)); const [, , bw] = edBox(o); c.x += Math.max(1, Math.ceil(bw)); ED.lvl.objs.push(c); ED.sel = ED.lvl.objs.length - 1; })]);
+  single.push(['Borrar', mod(() => { ED.lvl.objs.splice(ED.sel, 1); ED.sel = null; }), '#c42a2a']);
+  const h = (rows.length + single.length) * (rowH + gap) + gap * 2 + 26 * EK, x = A.x + A.w - w - 10 * EK, y = A.y + 10 * EK;
+  uiPanel(g, x, y, w, Math.min(h, A.h - 20 * EK));
+  EUI.hits.push({ x, y, w, h, fn: null, block: true });   // el panel tapa la rejilla, pero sus botones van encima
+  uiText(g, { B: 'Bloque', S: 'Pincho', s: 'Pincho pequeño', W: 'Sierra', P: 'Plataforma de salto', O: 'Orbe', M: 'Portal de vehículo', G: 'Portal de gravedad', V: 'Portal de velocidad', D: 'Decoración', C: 'Disparador de color' }[o.k], x + w / 2, y + 18 * EK, 14 * EK, '#ffe23a');
+  let ry = y + 30 * EK;
+  for (const [lab, minus, plus] of rows) {
+    uiBtn(g, x + gap * 2, ry, rowH, rowH, '', minus, { draw: (g, bx, by, bw, bh) => icoPM(g, bx + bw / 2, by + bh / 2, bh * .6, false) });
+    uiText(g, lab, x + w / 2, ry + rowH / 2, 14 * EK);
+    uiBtn(g, x + w - gap * 2 - rowH, ry, rowH, rowH, '', plus, { draw: (g, bx, by, bw, bh) => icoPM(g, bx + bw / 2, by + bh / 2, bh * .6, true) });
+    ry += rowH + gap;
+  }
+  for (const [lab, fn, colr] of single) { uiBtn(g, x + gap * 2, ry, w - gap * 4, rowH, lab, fn, { size: 14 * EK, color: colr }); ry += rowH + gap; }
+}
+
+// ---------------- ventanas superpuestas ----------------
+function edRenderOverlay(g, t) {
+  g.fillStyle = 'rgba(0,0,10,.6)'; g.fillRect(0, 0, W, H);
+  EUI.hits.push({ x: 0, y: 0, w: W, h: H, fn: null, block: true });
+  if (ED.overlay === 'settings') edRenderSettings(g);
+  else if (ED.overlay === 'keyboard') edRenderKeyboard(g);
+  else if (ED.overlay === 'color' || ED.overlay === 'bgcolor') edRenderColors(g);
+}
+function edRenderSettings(g) {
+  const cl = ED.lvl, w = Math.min(560 * EK, W - 20 * EK), rowH = 46 * EK, gap = 10 * EK, h = Math.min(H - 20 * EK, rowH * 6 + gap * 8 + 40 * EK), x = (W - w) / 2, y = (H - h) / 2;
+  uiPanel(g, x, y, w, h);
+  uiText(g, 'Ajustes del nivel', x + w / 2, y + 26 * EK, 22 * EK, '#ffe23a');
+  let ry = y + 50 * EK; const lw = w * .36;
+  const row = (label, value, onPrev, onNext, onClick) => {
+    uiText(g, label, x + gap * 2, ry + rowH / 2, 16 * EK, '#fff', 'left');
+    const vx = x + lw, vw = w - lw - gap * 2;
+    if (onPrev) {
+      uiBtn(g, vx, ry, rowH, rowH, '', onPrev, { draw: (g, bx, by, bw, bh) => icoArrow(g, bx + bw / 2, by + bh / 2, bh * .45, 1) });
+      uiBtn(g, vx + rowH + gap / 2, ry, vw - rowH * 2 - gap, rowH, value, onClick || null, { color: '#1f2a66', size: 15 * EK });
+      uiBtn(g, vx + vw - rowH, ry, rowH, rowH, '', onNext, { draw: (g, bx, by, bw, bh) => icoArrow(g, bx + bw / 2, by + bh / 2, bh * .45, -1) });
+    } else uiBtn(g, vx, ry, vw, rowH, value, onClick, { color: '#1f2a66', size: 15 * EK });
+    ry += rowH + gap;
+  };
+  const cyc = (arr, cur, d) => arr[(arr.indexOf(cur) + d + arr.length) % arr.length];
+  row('Nombre', cl.name + '  ✎', null, null, () => { ED.overlay = 'keyboard'; ED.kbFrom = 'settings'; });
+  row('Música', songLabel(cl.song), () => { cl.song = cyc(ED_SONGS, cl.song, -1); edSave(); AU.play(cl.song); }, () => { cl.song = cyc(ED_SONGS, cl.song, 1); edSave(); AU.play(cl.song); });
+  row('Tema', ED_THEMES.find(q => q[0] === cl.theme)[1], () => { cl.theme = cyc(ED_THEMES, ED_THEMES.find(q => q[0] === cl.theme), -1)[0]; edSave(); }, () => { cl.theme = cyc(ED_THEMES, ED_THEMES.find(q => q[0] === cl.theme), 1)[0]; edSave(); });
+  row('Velocidad', ['x0,5', 'x1', 'x2', 'x3', 'x4'][cl.speed], () => { cl.speed = (cl.speed + 4) % 5; cl.verified = false; edSave(); }, () => { cl.speed = (cl.speed + 1) % 5; cl.verified = false; edSave(); });
+  uiText(g, 'Color', x + gap * 2, ry + rowH / 2, 16 * EK, '#fff', 'left');
+  uiBtn(g, x + lw, ry, w - lw - gap * 2, rowH, '', () => { ED.overlay = 'bgcolor'; }, { id: 'Cambiar', color: cl.bg, draw: (g, bx, by, bw, bh) => { g.fillStyle = cl.gr; g.fillRect(bx + bw * .7, by + 6 * EK, bw * .3 - 8 * EK, bh - 12 * EK); uiText(g, 'Cambiar', bx + bw * .35, by + bh / 2, 15 * EK); } });
+  ry += rowH + gap;
+  uiBtn(g, x + w / 2 - 80 * EK, Math.min(ry + 4 * EK, y + h - rowH - gap), 160 * EK, rowH, 'Listo', () => { ED.overlay = null; ensureMenuSong(); }, { color: '#2f9a12' });
+}
+function edRenderColors(g) {
+  const cols = 5, sz = Math.min(64 * EK, (W - 60 * EK) / cols), w = sz * cols + 40 * EK, h = sz * 4 + 90 * EK, x = (W - w) / 2, y = (H - h) / 2;
+  uiPanel(g, x, y, w, h);
+  const trig = ED.overlay === 'color' ? ED.lvl.objs[ED.sel] : null;
+  uiText(g, trig ? 'Color desde aquí' : 'Color del nivel', x + w / 2, y + 24 * EK, 20 * EK, '#ffe23a');
+  ED_COLORS.forEach((c, i) => {
+    const cx = x + 20 * EK + (i % cols) * sz, cy = y + 46 * EK + Math.floor(i / cols) * sz;
+    const cur = trig ? trig.bg === c : ED.lvl.bg === c;
+    uiBtn(g, cx + 4 * EK, cy + 4 * EK, sz - 8 * EK, sz - 8 * EK, '', () => {
+      if (trig) { edSnap(); trig.bg = c; } else { ED.lvl.bg = c; ED.lvl.gr = groundOf(c); }
+      edSave(); ED.overlay = trig ? null : 'settings';
+    }, { color: c, on: cur, draw: () => {} });
+  });
+}
+const KB_ROWS = ['1234567890', 'QWERTYUIOP', 'ASDFGHJKLÑ', 'ZXCVBNM'];
+function edRenderKeyboard(g) {
+  const w = Math.min(640 * EK, W - 16 * EK), key = (w - 24 * EK) / 10, h = key * 5 + 100 * EK, x = (W - w) / 2, y = Math.max(8 * EK, (H - h) / 2);
+  uiPanel(g, x, y, w, h);
+  uiText(g, 'Nombre del nivel', x + w / 2, y + 22 * EK, 18 * EK, '#ffe23a');
+  rrect(g, x + 12 * EK, y + 40 * EK, w - 24 * EK, 40 * EK, 8 * EK); g.fillStyle = '#0a0e28'; g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 2 * EK; g.stroke();
+  const caret = (Math.floor(performance.now() / 500) % 2) ? '|' : ' ';
+  uiText(g, fitText(g, ED.lvl.name + caret, 20 * EK, w - 40 * EK), x + w / 2, y + 60 * EK, 20 * EK);
+  const typ = ch => { if (ED.lvl.name.length < 24) { ED.lvl.name += ch; edSave(); } };
+  KB_ROWS.forEach((r, ri) => {
+    const off = (10 - r.length) * key / 2;
+    [...r].forEach((ch, ci) => uiBtn(g, x + 12 * EK + off + ci * key + 2 * EK, y + 90 * EK + ri * key, key - 4 * EK, key - 4 * EK, ch, () => typ(ED.lvl.name.length ? ch.toLowerCase() : ch), { color: '#26337a', size: Math.min(20 * EK, key * .45) }));
+  });
+  const ry = y + 90 * EK + 4 * key;
+  uiBtn(g, x + 12 * EK, ry, key * 2 - 4 * EK, key - 4 * EK, 'Aa', () => { const n = ED.lvl.name; ED.lvl.name = n === n.toUpperCase() ? n.toLowerCase() : n.toUpperCase(); edSave(); }, { size: 16 * EK });
+  uiBtn(g, x + 12 * EK + key * 2, ry, key * 4 - 4 * EK, key - 4 * EK, 'Espacio', () => typ(' '), { size: 15 * EK, color: '#26337a' });
+  uiBtn(g, x + 12 * EK + key * 6, ry, key * 2 - 4 * EK, key - 4 * EK, '', () => { ED.lvl.name = ED.lvl.name.slice(0, -1); edSave(); }, { color: '#8a1a2a', draw: (g, bx, by, bw, bh) => icoArrow(g, bx + bw / 2, by + bh / 2, bh * .4, 1) });
+  uiBtn(g, x + 12 * EK + key * 8, ry, key * 2 - 4 * EK, key - 4 * EK, 'OK', () => { if (!ED.lvl.name.trim()) ED.lvl.name = 'Sin nombre'; edSave(); ED.overlay = ED.kbFrom || null; }, { color: '#2f9a12', size: 17 * EK });
+}
+
+// ---------------- cámara ----------------
+function edZoom(f, px, py) {
+  const A = edLayout().area, cx = px == null ? A.x + A.w / 2 : px, cy = py == null ? A.y + A.h / 2 : py;
+  const wx = ED.cx + (cx - A.x) / ED.u, wy = ED.cy + (A.y + A.h - cy) / ED.u;
+  ED.u = clamp(ED.u * f, 10 * DPR, 120 * DPR);
+  ED.cx = wx - (cx - A.x) / ED.u; ED.cy = wy - (A.y + A.h - cy) / ED.u;
+}
+function edWorld(px, py) { const A = edLayout().area; return [ED.cx + (px - A.x) / ED.u, ED.cy + (A.y + A.h - py) / ED.u]; }
+
+// ---------------- entrada ----------------
+function edHitAt(px, py) { for (let i = EUI.hits.length - 1; i >= 0; i--) { const h = EUI.hits[i]; if (px >= h.x && px < h.x + h.w && py >= h.y && py < h.y + h.h) return h; } return null; }
+function edPointer(type, e) {
+  const px = e.clientX * DPR, py = e.clientY * DPR;
+  if (type === 'down') {
+    AU.init(); ensureMenuSong();
+    ED.ptrs.set(e.pointerId, { x: px, y: py });
+    try { cv.setPointerCapture(e.pointerId); } catch (er) { }
+    if (ED.ptrs.size === 2) {
+      // segundo dedo: es un gesto de cámara; se deshace lo que el primer dedo hubiera empezado a pintar o borrar
+      const d = ED.drag; if (d && (d.kind === 'paint' || d.kind === 'erase') && d.snapped && ED.undo.length) ED.lvl.objs = JSON.parse(ED.undo.pop());
+      ED.drag = { kind: 'pinch' }; return;
+    }
+    const h = edHitAt(px, py);
+    ED.drag = { kind: 'none', sx: px, sy: py, lx: px, ly: py, moved: false, hit: h, btn: e.button };
+    if (!h) return;
+    if (h.world && ED.mode === 'edit' && !ED.overlay) {
+      const [wx, wy] = edWorld(px, py);
+      if (e.button === 2 || e.button === 1 || ED.tool === 'pan') { ED.drag.kind = 'pan'; return; }
+      ED.drag.wx0 = wx; ED.drag.wy0 = wy;
+      // en pantallas táctiles se espera a saber si es un dedo (poner) o dos (cámara)
+      if (e.pointerType === 'touch' && (ED.tool === 'build' || ED.tool === 'erase')) { ED.drag.kind = ED.tool === 'build' ? 'pendPaint' : 'pendErase'; return; }
+      if (ED.tool === 'build') edStartPaint(ED.drag, wx, wy);
+      else if (ED.tool === 'erase') edStartErase(ED.drag, wx, wy);
+      else if (ED.tool === 'select') {
+        const i = edAt(wx, wy); ED.sel = i >= 0 ? i : null;
+        if (i >= 0) { edSnap(); const o = ED.lvl.objs[i]; ED.drag.kind = 'move'; ED.drag.ox = o.x; ED.drag.oy = o.y; ED.drag.wx = wx; ED.drag.wy = wy; ED.drag.changed = false; }
+        else ED.drag.kind = 'pan';
+      }
+    } else {
+      // dentro de la tira de objetos o de la lista se puede arrastrar para desplazar (aunque empiece sobre un botón)
+      const region = EUI.hits.find(q => (q.strip || q.scrollList) && px >= q.x && px < q.x + q.w && py >= q.y && py < q.y + q.h);
+      if (region) ED.drag.kind = region.strip ? 'strip' : 'list';
+    }
+    return;
+  }
+  if (type === 'move') {
+    if (ED.ptrs.has(e.pointerId)) {
+      const prev = ED.ptrs.get(e.pointerId); ED.ptrs.set(e.pointerId, { x: px, y: py });
+      if (ED.ptrs.size === 2 && ED.mode === 'edit') {
+        const [a, b] = [...ED.ptrs.values()], other = a === ED.ptrs.get(e.pointerId) ? b : a;
+        const d0 = Math.hypot(prev.x - other.x, prev.y - other.y), d1 = Math.hypot(px - other.x, py - other.y);
+        ED.cx -= (px - prev.x) / 2 / ED.u; ED.cy += (py - prev.y) / 2 / ED.u;
+        if (d0 > 10) edZoom(d1 / d0, (px + other.x) / 2, (py + other.y) / 2);
+        return;
+      }
+    }
+    if (ED.mode === 'edit') { const A = edLayout().area; ED.hover = (px >= A.x && py >= A.y && py < A.y + A.h) ? edWorld(px, py) : null; }
+    const d = ED.drag; if (!d || !ED.ptrs.has(e.pointerId)) return;
+    const dx = px - d.lx, dy = py - d.ly; d.lx = px; d.ly = py;
+    if (Math.hypot(px - d.sx, py - d.sy) > 8 * DPR) d.moved = true;
+    const [wx, wy] = edWorld(px, py);
+    if (d.kind === 'pendPaint' && d.moved) edStartPaint(d, d.wx0, d.wy0);
+    if (d.kind === 'pendErase' && d.moved) edStartErase(d, d.wx0, d.wy0);
+    if (d.kind === 'pan') { ED.cx -= dx / ED.u; ED.cy += dy / ED.u; }
+    else if (d.kind === 'paint') { const it = ED_TABS[ED.tab].items[ED.item]; if (it.o.k === 'B' || it.o.k === 'S' || it.o.k === 's') { if (edPlace(wx, wy)) edSave(); } }
+    else if (d.kind === 'erase') { if (edEraseAt(wx, wy)) d.erased = true; }
+    else if (d.kind === 'move' && ED.sel != null) {
+      const o = ED.lvl.objs[ED.sel], st = ED.half ? .5 : 1;
+      const nx = d.ox + Math.round((wx - d.wx) / st) * st, ny = Math.max(-2, d.oy + Math.round((wy - d.wy) / st) * st);
+      if (nx !== o.x || ny !== o.y) { o.x = nx; o.y = ny; d.changed = true; }
+    }
+    else if (d.kind === 'strip') ED.strip -= dx;
+    else if (d.kind === 'list') ED.listScroll -= dy;
+    return;
+  }
+  if (type === 'up') {
+    ED.ptrs.delete(e.pointerId);
+    const d = ED.drag; ED.drag = ED.ptrs.size ? { kind: 'none', sx: 0, sy: 0, lx: 0, ly: 0 } : null;
+    if (!d) return;
+    if (d.kind === 'pendPaint') { edStartPaint(d, d.wx0, d.wy0); d.kind = 'paint'; }
+    if (d.kind === 'pendErase') { edStartErase(d, d.wx0, d.wy0); }
+    if (d.kind === 'move') { if (d.changed) edSave(); else ED.undo.pop(); }
+    if (d.kind === 'erase') { if (d.erased) edSave(); else ED.undo.pop(); }
+    // un toque (sin arrastrar) activa el botón donde empezó
+    if (d.hit && d.hit.fn && !d.moved) d.hit.fn();
+  }
+}
+function edStartPaint(d, wx, wy) { edSnap(); d.snapped = true; if (edPlace(wx, wy)) { edSave(); AU.fx('click'); } else { ED.undo.pop(); d.snapped = false; } d.kind = 'paint'; }
+function edStartErase(d, wx, wy) { edSnap(); d.snapped = true; d.kind = 'erase'; d.erased = edEraseAt(wx, wy); }
+function edEraseAt(wx, wy) { const i = edAt(wx, wy); if (i < 0) return false; ED.lvl.objs.splice(i, 1); if (ED.sel === i) ED.sel = null; else if (ED.sel > i) ED.sel--; return true; }
+function edWheel(e) {
+  if (ED.mode === 'list') { ED.listScroll += e.deltaY * DPR; return; }
+  if (e.ctrlKey || e.metaKey) edZoom(e.deltaY < 0 ? 1.12 : .89, e.clientX * DPR, e.clientY * DPR);
+  else { ED.cx += (e.deltaX + (e.shiftKey ? 0 : e.deltaY)) * DPR / ED.u * .6; if (e.shiftKey) ED.cy -= e.deltaY * DPR / ED.u * .6; }
+}
+function edKey(e) {
+  const k = e.code;
+  if (ED.overlay === 'keyboard') {
+    e.preventDefault();
+    if (k === 'Enter' || k === 'Escape') { if (!ED.lvl.name.trim()) ED.lvl.name = 'Sin nombre'; edSave(); ED.overlay = ED.kbFrom || null; }
+    else if (k === 'Backspace') { ED.lvl.name = ED.lvl.name.slice(0, -1); edSave(); }
+    else if (e.key.length === 1 && ED.lvl.name.length < 24 && !e.ctrlKey && !e.metaKey) { ED.lvl.name += e.key; edSave(); }
+    return;
+  }
+  if (k === 'Escape') { e.preventDefault(); if (ED.overlay) { ED.overlay = null; ensureMenuSong(); } else if (ED.mode === 'edit') { edSave(); ED.mode = 'list'; } else setState('menu'); return; }
+  if (ED.mode !== 'edit' || ED.overlay) return;
+  if ((e.ctrlKey || e.metaKey) && k === 'KeyZ') { e.preventDefault(); e.shiftKey ? edRedo() : edUndo(); return; }
+  if ((e.ctrlKey || e.metaKey) && k === 'KeyY') { e.preventDefault(); edRedo(); return; }
+  const sel = ED.sel != null ? ED.lvl.objs[ED.sel] : null, st = ED.half ? .5 : 1;
+  if ((k === 'Delete' || k === 'Backspace') && sel) { e.preventDefault(); edSnap(); ED.lvl.objs.splice(ED.sel, 1); ED.sel = null; edSave(); return; }
+  const mv = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[k];
+  if (mv) { e.preventDefault(); if (sel) { edSnap(); sel.x += mv[0] * st; sel.y = Math.max(-2, sel.y + mv[1] * st); edSave(); } else { ED.cx += mv[0] * 3; ED.cy += mv[1] * 3; } return; }
+  const tools = { Digit1: 'build', Digit2: 'select', Digit3: 'erase', Digit4: 'pan', KeyB: 'build', KeyV: 'select', KeyE: 'erase', KeyH: 'pan' };
+  if (tools[k]) { ED.tool = tools[k]; if (ED.tool !== 'select') ED.sel = null; return; }
+  if (k === 'Enter') { e.preventDefault(); edTest(false); }
+  if (k === 'Space') e.preventDefault();
+}
+
+// ---------------- probar el nivel ----------------
+function edTest(fromHere) {
+  edSave();
+  const L = buildLevel(customDef(ED.lvl));
+  startWith(L, false, { editorTest: true });
+  if (fromHere) {
+    const A = edLayout().area, x0 = Math.max(0, ED.cx + A.w / ED.u * .3);
+    const s = newSim(L); s.ev = null;
+    s.p.x = x0;
+    for (const o of L.portals) { if (o.x + .5 <= x0) { usePortal(s, o); s.pi++; } else break; }
+    s.p.y = s.p.corr ? (s.p.corr.f + s.p.corr.c) / 2 : .5; s.p.grounded = !s.p.corr;
+    s.ev = [];
+    scene.sim = s; scene.startState = clone(s); scene.attemptX = x0 + 7; snapCam(scene);
+  }
+}
+function backToEditor(verified) {
+  input.clear();
+  if (verified && ED.lvl) { ED.lvl.verified = true; persist(); edToast('¡Nivel verificado!'); }
+  setState('editor');
+}
+
 // --- eventos de UI ---
 function bind(id, fn) { $(id).addEventListener('click', e => { AU.init(); AU.fx('click'); fn(e); }); }
 bind('#bPlay', () => setState('levels'));
 bind('#bGarage', () => { setState('garage'); refreshGarage(); });
 bind('#bHelp', () => setState('help'));
+bind('#bEditor', () => { ED.mode = 'list'; setState('editor'); });
 bind('#bMute', () => AU.setMuted(!save.muted));
 bind('#bSettings', () => openSettings());
 bind('#pSettings', () => openSettings());
@@ -2219,7 +2815,7 @@ bind('#lvNext', () => { if (selLevel < LEVELS.length - 1) { selLevel++; renderLe
 bind('#lvPlay', () => startLevel(selLevel, false));
 bind('#lvPrac', () => startLevel(selLevel, true));
 $('#lvCard').addEventListener('click', () => { AU.init(); startLevel(selLevel, false); });
-bind('#hPause', () => togglePause());
+bind('#hPause', () => { if (scene && scene.editorTest) backToEditor(false); else togglePause(); });
 bind('#hCpAdd', () => addCheckpoint(true));
 bind('#hCpDel', () => removeCheckpoint());
 bind('#pResume', () => togglePause());
@@ -2228,22 +2824,23 @@ bind('#pPrac', () => {
   if (AU.ctx) AU.ctx.resume().catch(() => { });
   scene.practice = !scene.practice; scene.cps.length = 0; scene.sim.p.dead = true; respawn(scene); setState('play');
 });
-bind('#pMenu', () => goMenu());
-bind('#cRetry', () => startLevel(selLevel, scene.practice));
+bind('#pMenu', () => { if (scene && scene.L.custom) { if (AU.ctx) AU.ctx.resume().catch(() => { }); ED.mode = 'list'; setState('editor'); } else goMenu(); });
+bind('#cRetry', () => { if (scene.L.custom) startWith(scene.L, scene.practice); else startLevel(selLevel, scene.practice); });
 bind('#cNext', () => { if (selLevel < LEVELS.length - 1) startLevel(selLevel + 1, false); });
-bind('#cMenu', () => goMenu());
+bind('#cMenu', () => { if (scene && scene.L.custom) { ED.mode = 'list'; setState('editor'); } else goMenu(); });
 // HUD: que pulsar sus botones no cuente como salto
 ['#hPause', '#hMute', '#hCpAdd', '#hCpDel'].forEach(id => $(id).addEventListener('pointerdown', e => e.stopPropagation()));
 
 const JUMP_KEYS = new Set(['Space', 'ArrowUp', 'KeyW', 'Enter', 'NumpadEnter']);
 addEventListener('keydown', e => {
   AU.init();
+  if (state === 'editor') { edKey(e); return; }
   ensureMenuSong();
   const k = e.code;
   if (k === 'KeyM' && !e.repeat) { AU.setMuted(!save.muted); return; }
   if (state === 'play') {
     if (JUMP_KEYS.has(k)) { e.preventDefault(); if (!e.repeat) input.latch = true; input.keys.add(k); return; }
-    if (k === 'Escape' || k === 'KeyP') { e.preventDefault(); togglePause(); return; }
+    if (k === 'Escape' || k === 'KeyP') { e.preventDefault(); if (scene && scene.editorTest) backToEditor(false); else togglePause(); return; }
     if (k === 'KeyR' && !e.repeat) { restartLevel(); return; }
     if (k === 'KeyZ' && !e.repeat) { addCheckpoint(true); return; }
     if (k === 'KeyX' && !e.repeat) { removeCheckpoint(); return; }
@@ -2267,11 +2864,14 @@ addEventListener('keyup', e => { if (input.keys.delete(e.code) && e.code === 'Sp
 cv.addEventListener('pointerdown', e => {
   AU.init();
   ensureMenuSong();
+  if (state === 'editor') { e.preventDefault(); edPointer('down', e); return; }
   if (state !== 'play') return;
   e.preventDefault(); input.ptrs.add(e.pointerId); input.latch = true;
   try { cv.setPointerCapture(e.pointerId); } catch (er) { }
 });
-const ptrUp = e => input.ptrs.delete(e.pointerId);
+const ptrUp = e => { input.ptrs.delete(e.pointerId); if (state === 'editor') edPointer('up', e); };
+cv.addEventListener('pointermove', e => { if (state === 'editor') edPointer('move', e); });
+cv.addEventListener('wheel', e => { if (state === 'editor') { e.preventDefault(); edWheel(e); } }, { passive: false });
 cv.addEventListener('pointerup', ptrUp); cv.addEventListener('pointercancel', ptrUp); cv.addEventListener('lostpointercapture', ptrUp);
 document.addEventListener('pointerdown', () => { AU.init(); ensureMenuSong(); }, { passive: true });
 cv.addEventListener('contextmenu', e => e.preventDefault());
@@ -2292,7 +2892,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { re
 requestAnimationFrame(t => { last = t; frame(t); });
 
 // acceso para pruebas automáticas
-window.__gd = { LEVELS, newSim, step, clone, SPEEDS, DT, get scene() { return scene; }, get state() { return state; }, startLevel, setState, snapCam, gameTick, AU, drawIcon, CFG, render: dt => render(dt) };
+window.__gd = { LEVELS, newSim, step, clone, SPEEDS, DT, get scene() { return scene; }, get state() { return state; }, startLevel, setState, snapCam, gameTick, AU, drawIcon, CFG, ED, startCustom, customDef, edOpen, edNewLevel, get save() { return save; }, EUI_hits: () => EUI.hits, edLayout, ED_TABS, buildLevel, render: dt => render(dt) };
 </script>
 </body>
 </html>

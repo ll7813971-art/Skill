@@ -25,6 +25,26 @@ No necesita instalar nada: ábrelo en el navegador y a jugar.
 - Récords por nivel, música y efectos de sonido sintetizados (sin archivos externos).
 - Funciona con teclado, ratón y pantalla táctil.
 
+## Editor de niveles
+
+Botón **Crear** del menú. Toda su interfaz está dibujada por el propio juego (sin botones ni
+cuadros del navegador) y funciona con ratón, teclado y pantalla táctil.
+
+- **Mis niveles**: crear, editar, jugar, practicar, borrar y copiar/pegar niveles como código.
+- **Herramientas**: Poner (también arrastrando), Elegir y mover, Borrar arrastrando y Mover la cámara.
+  Zoom, deshacer/rehacer y rejilla de 1 o ½ bloque.
+- **Objetos**: bloques de cualquier tamaño, pinchos, pinchos pequeños, sierras, plataformas de salto
+  y orbes de 3 colores, portales de los 7 vehículos, de gravedad y de velocidad (x0,5 a x4),
+  decoración y disparadores de color.
+- **Propiedades** del objeto elegido (tamaño, girar, color, vehículo, velocidad…).
+- **Ajustes del nivel**: nombre (con teclado propio), música, tema visual, velocidad y color.
+- **Probar** desde el principio o **desde aquí**; si llegas al final en la prueba, el nivel queda verificado.
+- Sin límite de objetos ni de longitud.
+
+Atajos: `1`–`4` herramientas, `Ctrl+Z`/`Ctrl+Y` deshacer/rehacer, flechas para mover lo elegido,
+`Supr` para borrarlo, `Enter` para probar, rueda para desplazar y `Ctrl`+rueda para el zoom.
+En móvil: dos dedos para mover la cámara y pellizcar para el zoom.
+
 ## Controles
 
 | Acción | Teclas |
