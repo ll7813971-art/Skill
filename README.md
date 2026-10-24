@@ -1,42 +1,27 @@
-# Saltarín
+# Geometry Dash — Edición HTML
 
-Juego de plataformas 2D para **móvil** hecho con HTML5 Canvas, TypeScript y
-Web Audio, sin imágenes ni archivos de sonido: todo se dibuja y se sintetiza
-por código.
+Recreación de Geometry Dash en **un solo archivo**: [`index.html`](index.html).
+No necesita instalar nada: ábrelo en el navegador y a jugar.
 
-- 3 niveles (Pradera, Atardecer y Noche) con dificultad creciente y bandera de meta
-- Controles táctiles con multitoque: mitad izquierda para moverse (◀ ▶, se puede
-  deslizar el dedo) y mitad derecha para saltar (mantén pulsado para saltar
-  más alto)
-- Salto ágil con altura variable, coyote time y buffer de salto
-- Monedas, dos tipos de enemigos (patrullero y saltarín: písalos desde arriba),
-  3 vidas, puntuación
-- Menú, pausa, fin de partida, victoria, aviso para girar el móvil
-- Efectos de sonido sintetizados, partículas, sacudida de cámara y vibración
+## Contenido
 
-## Jugar
+- **Menú de inicio** con escena animada, selección de niveles, garaje y pantalla de ayuda.
+- **3 niveles** de dificultad creciente:
+  - *Primeros Pasos* (Fácil): cubo y nave.
+  - *Ritmo Nocturno* (Normal): cubo, bola, gravedad invertida, OVNI y velocidad x2.
+  - *Ruta Electrónica* (Difícil): cubo, onda, robot, araña y nave a velocidad x2.
+- **7 vehículos**: cubo, nave, bola, OVNI, onda, robot y araña.
+- Orbes, plataformas de salto, portales de vehículo, de gravedad y de velocidad.
+- **Modo práctica** con puntos de control automáticos y manuales.
+- Garaje para elegir la cara del cubo y los colores (se guarda en el navegador).
+- Récords por nivel, música y efectos de sonido sintetizados (sin archivos externos).
+- Funciona con teclado, ratón y pantalla táctil.
 
-```bash
-npm install
-npm run dev        # http://127.0.0.1:5173 (para el móvil: npx vite --host)
-npm run build      # versión de producción en dist/ (servible desde cualquier carpeta)
-```
+## Controles
 
-## Pruebas
-
-```bash
-npm run dev                # en una terminal
-npm test                   # 176 comprobaciones en Chromium con emulación móvil y toques reales
-npm test -- enemies        # solo un sistema
-npm run playtest           # partida completa automática: menú → 3 niveles → victoria
-```
-
-Cada sistema tiene una escena aislada en el nivel de pruebas: abre `?dev` para
-ver el índice (`?dev=movement`, `?dev=enemies`, `?dev=levels&n=2`...).
-
-## Documentación del proyecto
-
-- `GAME_SPEC.md`: qué juego es (la especificación)
-- `SYSTEMS.md`: sistemas, orden de construcción y registro de pruebas
-- `PLAYTEST.md`: resultado de la partida completa y ajustes de diseño
-- `.claude/skills/game-dev/`: la skill que guió el desarrollo
+| Acción | Teclas |
+| --- | --- |
+| Saltar / volar | `Espacio`, `↑`, `W`, clic o toque (mantén pulsado para seguir saltando) |
+| Pausa | `Esc` o `P` |
+| Reiniciar | `R` |
+| Práctica: poner / quitar punto de control | `Z` / `X` |
