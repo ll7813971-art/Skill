@@ -162,9 +162,17 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
 @media (orientation:portrait) and (max-width:700px){
   #rotate.can{display:block}
   .mainrow{gap:18px}
-  .garage{flex-direction:column;margin-top:60px;gap:10px}
+  .garage{flex-direction:column;margin-top:60px;gap:10px;width:100%}
   .gside{width:100%}
+  .gprev canvas{width:110px;height:110px}
+  .grow{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  #gC1,#gC2{grid-template-columns:repeat(6,1fr)}
+  #gFaces{grid-template-columns:repeat(8,1fr)}
+  .grow button{width:100%;height:auto;aspect-ratio:1;max-width:46px;justify-self:center}
   .card{width:78vw}
+  .card .stars{align-self:flex-start}
+  .vehs .vl{display:none}
+  .vehs canvas{width:30px;height:30px}
 }
 @media (max-height:430px){
   .title{margin-top:2px}
@@ -960,7 +968,7 @@ function camTarget(sc) {
 }
 function snapCam(sc) {
   const p = sc.sim.p;
-  sc.camX = p.x - (W / U) * .3;
+  sc.camX = Math.min(p.x - (W / U) * .3, sc.L.len - (W / U) * .72);
   sc.camY = -Math.max(2.6, (H / U) * .23);
   sc.camY = camTarget(sc);
   sc.corrA = p.corr ? 1 : 0; if (p.corr) sc.lastCorr = p.corr;
@@ -994,7 +1002,7 @@ function render(dt) {
   const g = ctx, s = sc.sim, p = s.p, L = sc.L, vw = W / U, vh = H / U;
   const moving = state !== 'pause';
   if (moving) {
-    if (!p.dead && !(p.won && sc.winT > 0)) sc.camX = p.x - vw * .3;
+    if (!p.dead) sc.camX = Math.min(p.x - vw * .3, L.len - vw * .72);
     if (!p.dead) sc.camY = lerp(sc.camY, camTarget(sc), 1 - Math.exp(-dt * 5));
     if (p.corr) { sc.lastCorr = p.corr; sc.corrA = Math.min(1, sc.corrA + dt * 3); } else sc.corrA = Math.max(0, sc.corrA - dt * 3);
     sc.anim += dt;
@@ -1059,7 +1067,6 @@ function render(dt) {
 
   // objetos visibles
   const c0 = Math.floor(camX) - 2, c1 = Math.ceil(camX + vw) + 2, stamp = ++drawStamp;
-  const portals = [];
   for (let c = c0; c <= c1; c++) {
     const arr = L.bR[c]; if (!arr) continue;
     for (let k = 0; k < arr.length; k++) {
@@ -1068,15 +1075,20 @@ function render(dt) {
       else if (o.k === 'S' || o.k === 's') drawSpike(g, o, X, Y);
       else if (o.k === 'P') drawPad(g, o, X, Y, s.used[o.i], sc.anim);
       else if (o.k === 'O') drawOrb(g, o, X, Y, s.used[o.i], sc.anim);
-      else portals.push(o);
+      else drawPortal(g, o, X, Y, sc.anim, p.x > o.x + .5);
     }
   }
   // meta
   if (!sc.demo && X(L.len) < W + U * 3) {
-    const ex = X(L.len), eg = g.createLinearGradient(ex - U * 3, 0, ex + U * 1.2, 0);
-    eg.addColorStop(0, 'rgba(255,255,255,0)'); eg.addColorStop(.8, 'rgba(255,255,255,.75)'); eg.addColorStop(1, 'rgba(255,255,255,.95)');
-    g.fillStyle = eg; g.fillRect(ex - U * 3, 0, U * 4.2, H);
-    g.fillStyle = '#fff'; g.fillRect(ex + U * 1.2, 0, W, H);
+    const ex = X(L.len), pul = .5 + .5 * Math.sin(sc.anim * 5);
+    const eg = g.createLinearGradient(ex - U * 4, 0, ex, 0);
+    eg.addColorStop(0, 'rgba(255,255,255,0)'); eg.addColorStop(1, `rgba(255,255,255,${.45 + .15 * pul})`);
+    g.fillStyle = eg; g.fillRect(ex - U * 4, 0, U * 4, H);
+    const eg2 = g.createLinearGradient(ex, 0, ex + U * 6, 0);
+    eg2.addColorStop(0, 'rgba(255,255,255,.55)'); eg2.addColorStop(1, 'rgba(255,255,255,.22)');
+    g.fillStyle = eg2; g.fillRect(ex, 0, W, H);
+    g.fillStyle = '#fff'; g.fillRect(ex - U * .08, 0, U * .16, H);
+    for (let i = 0; i < 6; i++) { const yy = ((sc.anim * 3 + i / 6) % 1) * H; g.fillStyle = 'rgba(255,255,255,.7)'; g.fillRect(ex - U * .35, H - yy, U * .7, U * .12); }
   }
   // puntos de control
   for (const cp of sc.cps) {
@@ -1104,8 +1116,6 @@ function render(dt) {
       g.restore();
     }
   }
-  // portales (encima del jugador para dar sensación de atravesarlos)
-  for (const o of portals) drawPortal(g, o, X, Y, sc.anim);
   // suelo y techo
   drawGround(g, col, Y(0), false, camX);
   if (sc.corrA > 0 && sc.lastCorr) {
@@ -1191,7 +1201,7 @@ function drawOrb(g, o, X, Y, used, t) {
   g.beginPath(); g.arc(cx, cy, U * .34, 0, TAU); g.fill(); g.stroke();
   g.globalAlpha = 1;
 }
-function drawPortal(g, o, X, Y, t) {
+function drawPortal(g, o, X, Y, t, passed) {
   const cx = X(o.x + .5), cy = Y(o.y + 1.5);
   if (cx < -U * 2 || cx > W + U * 2) return;
   g.save(); g.translate(cx, cy);
@@ -1199,9 +1209,9 @@ function drawPortal(g, o, X, Y, t) {
     const n = [1, 1, 2, 3, 4][o.v], c = SPEED_COL[o.v];
     g.lineJoin = 'round';
     for (let i = 0; i < n; i++) {
-      const ox = (i - (n - 1) / 2) * U * .42;
-      poly(g, [ox - U * .3, -U * 1.1, ox + U * .25, 0, ox - U * .3, U * 1.1, ox - U * .05, 0]);
-      g.fillStyle = c; g.fill(); g.strokeStyle = '#000'; g.lineWidth = U * .14; g.stroke(); g.strokeStyle = '#fff'; g.lineWidth = U * .05; g.stroke();
+      const ox = (i - (n - 1) / 2) * U * .5;
+      poly(g, [ox - U * .45, -U * 1.05, ox - U * .05, -U * 1.05, ox + U * .45, 0, ox - U * .05, U * 1.05, ox - U * .45, U * 1.05, ox - U * .02, 0]);
+      g.lineWidth = U * .16; g.strokeStyle = '#000'; g.stroke(); g.fillStyle = c; g.fill(); g.lineWidth = U * .05; g.strokeStyle = 'rgba(255,255,255,.85)'; g.stroke();
     }
     g.restore(); return;
   }
@@ -1215,7 +1225,7 @@ function drawPortal(g, o, X, Y, t) {
   g.lineWidth = U * .05; g.strokeStyle = '#fff'; g.stroke();
   g.globalAlpha = .55; g.lineWidth = U * .06; g.strokeStyle = c; g.beginPath(); g.ellipse(0, 0, U * .22, U * 1.15, 0, 0, TAU); g.stroke();
   g.globalAlpha = 1;
-  if (o.k === 'M') { g.globalAlpha = .95; drawIcon(g, o.mode, U * .55, iconColors(), { t, ground: true }); g.globalAlpha = 1; }
+  if (o.k === 'M') { if (!passed) drawIcon(g, o.mode, U * .55, iconColors(), { t, ground: true }); }
   else {
     g.fillStyle = '#fff'; g.strokeStyle = '#000'; g.lineWidth = U * .06; const d = o.g === 1 ? 1 : -1;
     poly(g, [0, d * U * .45, U * .25, d * U * .1, U * .09, d * U * .1, U * .09, -d * U * .4, -U * .09, -d * U * .4, -U * .09, d * U * .1, -U * .25, d * U * .1]); g.fill(); g.stroke();
