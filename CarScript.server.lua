@@ -18,7 +18,7 @@ local BODY_COLOR = Color3.fromRGB(200, 30, 30)
 
 -- Si el carro va hacia atrás con W, cambia DRIVE_SIGN a -1.
 -- Si las ruedas giran al lado contrario de la tecla, cambia STEER_SIGN a -1.
-local DRIVE_SIGN = 1
+local DRIVE_SIGN = -1
 local STEER_SIGN = 1
 
 -- Sonidos. Son sonidos incluidos en Roblox y sirven de base: para un motor
