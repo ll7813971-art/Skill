@@ -11,7 +11,9 @@ local Workspace = game:GetService("Workspace")
 local SPAWN_POSITION = Vector3.new(0, 6, 0)
 local MAX_SPEED = 80       -- studs/s
 local TORQUE = 40000
-local TURN_ANGLE = 30      -- grados máximos de giro
+local TURN_ANGLE = 40      -- grados máximos de giro
+local TURN_ASSIST = 120    -- ayuda para girar (más = gira más rápido)
+local MAX_YAW_RATE = 2.5   -- rad/s, velocidad máxima de giro del carro
 local WHEEL_RADIUS = 1.5
 local WHEEL_WIDTH = 1
 local BODY_COLOR = Color3.fromRGB(200, 30, 30)
@@ -331,14 +333,17 @@ for i, def in ipairs(wheelDefs) do
 
 	local motor = Instance.new("HingeConstraint")
 	motor.Name = "Motor"
-	motor.ActuatorType = Enum.ActuatorType.Motor
+	-- Tracción trasera: las ruedas delanteras ruedan libres para que el carro gire sin patinar
+	motor.ActuatorType = isFront and Enum.ActuatorType.None or Enum.ActuatorType.Motor
 	motor.MotorMaxTorque = TORQUE
 	motor.MotorMaxAcceleration = 200
 	motor.AngularVelocity = 0
 	motor.Attachment0 = wheelAtt
 	motor.Attachment1 = hubAtt
 	motor.Parent = wheel
-	table.insert(motors, motor)
+	if not isFront then
+		table.insert(motors, motor)
+	end
 
 	if isFront then
 		-- Dirección: bisagra de eje vertical (Y) entre chasis y soporte
@@ -354,7 +359,7 @@ for i, def in ipairs(wheelDefs) do
 		steer.Name = "Direccion"
 		steer.ActuatorType = Enum.ActuatorType.Servo
 		steer.ServoMaxTorque = 100000
-		steer.AngularSpeed = 4
+		steer.AngularSpeed = 8
 		steer.TargetAngle = 0
 		steer.LimitsEnabled = true
 		steer.LowerAngle = -TURN_ANGLE
@@ -473,6 +478,15 @@ local function destroySpeedometer()
 end
 
 -- Controles: VehicleSeat entrega ThrottleFloat / SteerFloat entre -1 y 1
+-- Ayuda de giro: torque vertical según la dirección y la velocidad (invierte en reversa)
+local yawAttachment = Instance.new("Attachment")
+yawAttachment.Parent = chassis
+local yawAssist = Instance.new("Torque")
+yawAssist.Attachment0 = yawAttachment
+yawAssist.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
+yawAssist.Torque = Vector3.zero
+yawAssist.Parent = chassis
+
 local driver = nil
 local lastSpeed = 0
 local lastCrash = 0
@@ -526,6 +540,7 @@ seat:GetPropertyChangedSignal("Occupant"):Connect(function()
 		end
 	else
 		engineSound:Stop()
+		yawAssist.Torque = Vector3.zero
 		doorSound:Play()
 		setHeadlights(false)
 		destroySpeedometer()
@@ -540,8 +555,19 @@ RunService.Heartbeat:Connect(function(dt)
 		return
 	end
 
-	local speed = chassis.AssemblyLinearVelocity.Magnitude
+	local velocity = chassis.AssemblyLinearVelocity
+	local speed = velocity.Magnitude
 	local throttle = math.abs(seat.ThrottleFloat)
+
+	-- Ayuda de giro (SteerFloat > 0 = derecha = torque negativo sobre Y)
+	local forwardSpeed = velocity:Dot(chassis.CFrame.LookVector)
+	local desired = -seat.SteerFloat * math.clamp(forwardSpeed / 20, -1, 1)
+	local yawRate = chassis.AssemblyAngularVelocity.Y
+	local headroom = math.clamp(1 - yawRate * math.sign(desired) / MAX_YAW_RATE, 0, 1)
+	local yawTorque = desired * chassis.AssemblyMass * TURN_ASSIST * headroom
+	if math.abs(yawTorque - yawAssist.Torque.Y) > chassis.AssemblyMass * TURN_ASSIST * 0.02 then
+		yawAssist.Torque = Vector3.new(0, yawTorque, 0)
+	end
 
 	local targetPitch = ENGINE_MIN_PITCH
 		+ math.min(speed / MAX_SPEED, 1) * (ENGINE_MAX_PITCH - ENGINE_MIN_PITCH)
