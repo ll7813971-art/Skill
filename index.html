@@ -376,7 +376,7 @@ function die(s) { if (!s.p.dead) { s.p.dead = true; emit(s, 'die'); } }
 function newSim(L) {
   return {
     L, pi: 0, jumps: 0, ev: [], used: new Uint8Array(L.objs.length),
-    p: { x: 0, y: .5, vy: 0, mode: 'cube', gs: 1, spd: L.speed == null ? 1 : L.speed, grounded: true, held: false, buf: false, boost: 0, bt: 0, corr: null, dead: false, won: false, t: 0 }
+    p: { x: 0, y: .5, vy: 0, mode: 'cube', gs: 1, spd: L.speed == null ? 1 : L.speed, grounded: true, held: false, buf: false, jb: 0, boost: 0, bt: 0, corr: null, dead: false, won: false, t: 0 }
   };
 }
 function clone(s) { return { L: s.L, pi: s.pi, jumps: s.jumps, ev: null, used: s.used.slice(), p: { ...s.p } }; }
@@ -459,20 +459,20 @@ function step(s, hold) {
   const p = s.p; if (p.dead || p.won) return;
   const L = s.L;
   const press = hold && !p.held; p.held = hold;
-  if (press) p.buf = true; else if (!hold) p.buf = false;
+  if (press) { p.buf = true; p.jb = .1; } else if (!hold) p.buf = false;
   const m = p.mode;
-  if (p.buf && m !== 'wave') { const o = findOrb(s); if (o) { useOrb(s, o); p.buf = false; } }
+  if (p.buf && m !== 'wave') { const o = findOrb(s); if (o) { useOrb(s, o); p.buf = false; p.jb = 0; } }
   let gs = p.gs; const spd = SPEEDS[p.spd], gr = p.grounded;
   switch (m) {
     case 'cube':
-      if (gr && hold) { p.vy = gs * CUBE_J; p.buf = false; s.jumps++; emit(s, 'jump'); }
+      if (gr && (hold || p.jb > 0)) { p.vy = gs * CUBE_J; p.buf = false; p.jb = 0; s.jumps++; emit(s, 'jump'); }
       p.vy -= gs * CUBE_G * DT; if (p.vy * gs < -TERM) p.vy = -gs * TERM; break;
     case 'ship': {
       p.vy += gs * (hold ? SHIP_UP : -SHIP_DN) * DT; const r = p.vy * gs;
       if (r > SHIP_VU) p.vy = gs * SHIP_VU; else if (r < -SHIP_VD) p.vy = -gs * SHIP_VD; break;
     }
     case 'ball':
-      if (gr && p.buf) { p.gs = gs = -gs; p.vy = -gs * BALL_PUSH; p.buf = false; s.jumps++; emit(s, 'flip'); }
+      if (gr && (p.buf || p.jb > 0)) { p.gs = gs = -gs; p.vy = -gs * BALL_PUSH; p.buf = false; p.jb = 0; s.jumps++; emit(s, 'flip'); }
       p.vy -= gs * BALL_G * DT; if (p.vy * gs < -BALL_T) p.vy = -gs * BALL_T; break;
     case 'ufo':
       if (p.buf) { p.vy = gs * UFO_J; p.buf = false; s.jumps++; emit(s, 'jump'); }
@@ -480,15 +480,15 @@ function step(s, hold) {
     case 'wave':
       p.vy = gs * (hold ? 1 : -1) * spd; break;
     case 'robot':
-      if (gr && hold) { p.boost = 1; p.bt = 0; p.buf = false; s.jumps++; emit(s, 'jump'); }
+      if (gr && (hold || p.jb > 0)) { p.boost = 1; p.bt = 0; p.buf = false; p.jb = 0; s.jumps++; emit(s, 'jump'); }
       if (p.boost) { if (hold || p.bt < ROB_MIN) { p.vy = gs * ROB_V; p.bt += DT; if (p.bt >= ROB_BOOST) p.boost = 0; } else p.boost = 0; }
       if (!p.boost) { p.vy -= gs * ROB_G * DT; if (p.vy * gs < -TERM) p.vy = -gs * TERM; }
       break;
     case 'spider':
-      if (gr && p.buf) { teleport(s); gs = p.gs; p.buf = false; s.jumps++; }
+      if (gr && (p.buf || p.jb > 0)) { teleport(s); gs = p.gs; p.buf = false; p.jb = 0; s.jumps++; }
       p.vy -= gs * SPI_G * DT; if (p.vy * gs < -TERM) p.vy = -gs * TERM; break;
   }
-  p.x += spd * DT; p.y += p.vy * DT; p.t += DT;
+  p.x += spd * DT; p.y += p.vy * DT; p.t += DT; if (p.jb > 0) p.jb -= DT;
   collide(s);
   if (p.dead) return;
   const hh = HH[p.mode], hw = HW[p.mode], l = p.x - hw, r = p.x + hw, bo = p.y - hh, tp = p.y + hh;
@@ -626,7 +626,7 @@ function level3() {
   a.B(276, 0, 3, 3).B(284, 5, 3, 3);
   a.B(291, 3, 10, 1).S(294, 0, 7).S(294, 7, 7, 1);
   a.S(306, 0, 3);
-  a.G(314, 1).M(318, 'ship', 0).V(320, 2);
+  a.G(314, 1).M(318, 'ship', 0).V(324, 2);
   // Nave rápida
   a.B(332, 0, 2, 4).B(345, 5, 2, 4).B(358, 0, 2, 5).S(358, 5, 2).B(371, 3, 2, 6);
   [1, 2, 3, 4, 5, 4, 3, 2, 1, 1].forEach((h, i) => { const x = 382 + i * 3; a.B(x, 0, 3, h).B(x, h + 4, 3, 5 - h); });
@@ -636,7 +636,7 @@ function level3() {
   a.S(475, 0, 2);
   return {
     id: 'l3', name: 'Ruta Electrónica', diff: 'Difícil', face: 2, stars: 6, song: 'l3', len: 490, objs: a.o,
-    colors: [{ x: 0, bg: '#c4144e', gr: '#8e0c37' }, { x: 76, bg: '#0a8fc4', gr: '#066a93' }, { x: 166, bg: '#5a5f73', gr: '#3c4050' }, { x: 240, bg: '#7a1fc8', gr: '#55139a' }, { x: 318, bg: '#d6401a', gr: '#a02c0f' }, { x: 418, bg: '#11a65a', gr: '#0b7a41' }]
+    colors: [{ x: 0, bg: '#c4144e', gr: '#8e0c37' }, { x: 76, bg: '#0a8fc4', gr: '#066a93' }, { x: 166, bg: '#c08a12', gr: '#8c620a' }, { x: 240, bg: '#7a1fc8', gr: '#55139a' }, { x: 318, bg: '#d6401a', gr: '#a02c0f' }, { x: 418, bg: '#11a65a', gr: '#0b7a41' }]
   };
 }
 
@@ -1008,7 +1008,7 @@ const ORB_COL = { y: '#ffe600', p: '#ff52d8', b: '#3cc8ff' };
 
 function makeScene(L, practice, demo) {
   const sc = { L, practice: !!practice, demo: !!demo, sim: newSim(L), camX: 0, camY: -3, corrA: 0, lastCorr: null, rot: 0, anim: 0, trail: [], parts: [], rings: [],
-    deadT: 0, winT: 0, attempts: 1, cps: [], cpT: 0, cpCheck: 0, attemptX: 7, shake: 0, flash: 0, flashCol: '#fff', dust: 0, wonShown: false, time: 0 };
+    beams: [], deadT: 0, winT: 0, attempts: 1, cps: [], cpT: 0, cpCheck: 0, attemptX: 7, shake: 0, flash: 0, flashCol: '#fff', dust: 0, wonShown: false, time: 0 };
   snapCam(sc);
   return sc;
 }
@@ -1045,6 +1045,7 @@ function updateFx(sc, dt) {
     q.x += q.vx * dt; q.y += q.vy * dt; q.vy -= q.g * dt; q.vx *= .985; q.r += dt * 5;
   }
   for (let i = sc.rings.length - 1; i >= 0; i--) { const r = sc.rings[i]; r.t += dt; if (r.t >= r.max) sc.rings.splice(i, 1); }
+  for (let i = sc.beams.length - 1; i >= 0; i--) { const b = sc.beams[i]; b.t += dt; if (b.t >= b.max) sc.beams.splice(i, 1); }
   if (sc.parts.length > 600) sc.parts.splice(0, sc.parts.length - 600);
   sc.shake = Math.max(0, sc.shake - dt * 3); sc.flash = Math.max(0, sc.flash - dt * 2.5);
 }
@@ -1189,8 +1190,23 @@ function render(dt) {
   }
   g.globalAlpha = 1;
   for (const r of sc.rings) {
-    const k = r.t / r.max; g.globalAlpha = 1 - k; g.strokeStyle = r.col; g.lineWidth = U * .12 * (1 - k) + 1;
-    g.beginPath(); g.arc(X(r.x), Y(r.y), U * lerp(r.r0, r.r1, 1 - Math.pow(1 - k, 2)), 0, TAU); g.stroke();
+    const k = r.t / r.max, rad = U * lerp(r.r0, r.r1, 1 - Math.pow(1 - k, 2));
+    if (r.fill) {
+      const rg = g.createRadialGradient(X(r.x), Y(r.y), 0, X(r.x), Y(r.y), rad);
+      rg.addColorStop(0, r.col); rg.addColorStop(1, 'rgba(255,255,255,0)');
+      g.globalAlpha = (1 - k) * .8; g.fillStyle = rg; g.beginPath(); g.arc(X(r.x), Y(r.y), rad, 0, TAU); g.fill();
+      continue;
+    }
+    g.globalAlpha = 1 - k; g.strokeStyle = r.col; g.lineWidth = U * .14 * (1 - k) + 1;
+    g.beginPath(); g.arc(X(r.x), Y(r.y), rad, 0, TAU); g.stroke();
+  }
+  // rayo del teletransporte de la araña
+  for (const b of sc.beams) {
+    const k = b.t / b.max, x = X(b.x), ya = Y(b.y0), yb = Y(b.y1), w = U * (.7 - .5 * k);
+    const lg = g.createLinearGradient(x - w / 2, 0, x + w / 2, 0);
+    lg.addColorStop(0, 'rgba(255,255,255,0)'); lg.addColorStop(.5, b.col); lg.addColorStop(1, 'rgba(255,255,255,0)');
+    g.globalAlpha = 1 - k; g.fillStyle = lg; g.fillRect(x - w / 2, Math.min(ya, yb), w, Math.abs(yb - ya));
+    g.fillStyle = '#fff'; g.fillRect(x - U * .04 * (1 - k), Math.min(ya, yb), U * .08 * (1 - k), Math.abs(yb - ya));
   }
   g.globalAlpha = 1;
   g.restore();
@@ -1300,7 +1316,8 @@ let state = 'menu', scene = null, selLevel = 0, garageMode = 'cube';
 const MENU_STATES = new Set(['menu', 'levels', 'garage', 'help']);
 // la música del menú solo suena en las pantallas del menú
 function ensureMenuSong() { if (AU.ctx && MENU_STATES.has(state) && AU.songName !== 'menu') AU.play('menu'); }
-const input = { keys: new Set(), ptrs: new Set(), get held() { return this.keys.size > 0 || this.ptrs.size > 0; }, clear() { this.keys.clear(); this.ptrs.clear(); } };
+// latch: guarda cada pulsación hasta que la física la vea, aunque se suelte antes del siguiente paso
+const input = { keys: new Set(), ptrs: new Set(), latch: false, get held() { return this.keys.size > 0 || this.ptrs.size > 0; }, clear() { this.keys.clear(); this.ptrs.clear(); this.latch = false; } };
 
 function demoScene() { const sc = makeScene(DEMO_L, false, true); sc.attempts = 0; return sc; }
 const DEMO_L = demoLevel();
@@ -1359,14 +1376,18 @@ function gameTick(sc) {
     if (sc.winT > 1.5 && !sc.wonShown) { sc.wonShown = true; showComplete(); }
     return;
   }
-  step(s, input.held);
+  const hold = input.held || input.latch; input.latch = false;
+  step(s, hold);
   const ic = iconColors();
   for (const e of s.ev) {
     switch (e.t) {
       case 'die': {
         sc.deadT = sc.practice ? .7 : 1.05; sc.shake = 1;
-        addParts(sc, p.x, p.y, 30, [ic.c1, ic.c2, '#fff'], 9, .8, .22);
-        sc.rings.push({ x: p.x, y: p.y, r0: .2, r1: 2.6, t: 0, max: .45, col: '#fff' });
+        addParts(sc, p.x, p.y, 44, [ic.c1, ic.c2, '#fff'], 12, 1.1, .32);
+        addParts(sc, p.x, p.y, 16, ['#fff'], 5, .6, .16);
+        sc.rings.push({ x: p.x, y: p.y, r0: .2, r1: 1.8, t: 0, max: .3, col: '#fff', fill: true });
+        sc.rings.push({ x: p.x, y: p.y, r0: .3, r1: 3.4, t: 0, max: .55, col: '#fff' });
+        sc.rings.push({ x: p.x, y: p.y, r0: .2, r1: 2.2, t: 0, max: .4, col: ic.c1 });
         AU.fx('die'); if (!sc.practice) AU.stop();
         const pct = Math.min(99, Math.floor(p.x / sc.L.len * 100));
         const b = save.best[sc.L.id] || (save.best[sc.L.id] = { n: 0, p: 0 });
@@ -1388,7 +1409,8 @@ function gameTick(sc) {
       case 'speed': addParts(sc, p.x, p.y, 10, [SPEED_COL[p.spd], '#fff'], 6, .4, .14); break;
       case 'tele': {
         sc.rings.push({ x: p.x, y: e.a, r0: .2, r1: .9, t: 0, max: .25, col: ic.c2 });
-        for (let k = 0; k < 8; k++) sc.parts.push({ x: p.x + (Math.random() - .5) * .4, y: lerp(e.a, e.b, k / 7), vx: -2, vy: 0, life: .3, max: .3, sz: .2, col: ic.c2, g: 0, r: 0 });
+        sc.beams.push({ x: p.x, y0: e.a, y1: e.b, t: 0, max: .28, col: ic.c2 });
+        sc.rings.push({ x: p.x, y: e.b, r0: .2, r1: .9, t: 0, max: .25, col: '#fff' });
         AU.fx('tele'); break;
       }
       case 'win': {
@@ -1636,7 +1658,7 @@ addEventListener('keydown', e => {
   const k = e.code;
   if (k === 'KeyM' && !e.repeat) { AU.setMuted(!save.muted); return; }
   if (state === 'play') {
-    if (JUMP_KEYS.has(k)) { e.preventDefault(); input.keys.add(k); return; }
+    if (JUMP_KEYS.has(k)) { e.preventDefault(); if (!e.repeat) input.latch = true; input.keys.add(k); return; }
     if (k === 'Escape' || k === 'KeyP') { e.preventDefault(); togglePause(); return; }
     if (k === 'KeyR' && !e.repeat) { restartLevel(); return; }
     if (k === 'KeyZ' && !e.repeat) { addCheckpoint(true); return; }
@@ -1661,7 +1683,7 @@ cv.addEventListener('pointerdown', e => {
   AU.init();
   ensureMenuSong();
   if (state !== 'play') return;
-  e.preventDefault(); input.ptrs.add(e.pointerId);
+  e.preventDefault(); input.ptrs.add(e.pointerId); input.latch = true;
   try { cv.setPointerCapture(e.pointerId); } catch (er) { }
 });
 const ptrUp = e => input.ptrs.delete(e.pointerId);
