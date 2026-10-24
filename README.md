@@ -10,11 +10,11 @@ No necesita instalar nada: ábrelo en el navegador y a jugar.
   - *Primeros Pasos* (Fácil): cubo y nave.
   - *Ritmo Nocturno* (Normal): cubo, bola, gravedad invertida, OVNI y velocidad x2.
   - *Ruta Electrónica* (Difícil): cubo, onda, robot, araña y nave a velocidad x2.
-  - *Salto Cósmico* (Normal): cubo, nave y bola.
-  - *Torre Neón* (Difícil): cubo, OVNI, robot y gravedad invertida a x2.
-  - *Eco Digital* (Más difícil): onda, araña y bola.
-  - *Tormenta Polar* (Insano): nave y onda a x2, robot, OVNI y cubo a x3.
-  - *Abismo Final* (Demonio): los 7 vehículos seguidos.
+  - *Salto Cósmico* (Normal, espacio): islas flotantes, carrera por el techo, nave entre asteroides.
+  - *Torre Neón* (Difícil, neón): escalada con orbes, OVNI entre pisos, robot y orbes azules.
+  - *Eco Digital* (Más difícil, digital): sierras giratorias, onda entre pasillos de pinchos, araña.
+  - *Tormenta Polar* (Insano, nieve): de lento a x3, nave entre carámbanos, OVNI con orbes rosas.
+  - *Abismo Final* (Demonio, brasas): sierras por todas partes y los 7 vehículos seguidos.
 - **7 vehículos**: cubo, nave, bola, OVNI, onda, robot y araña.
 - Orbes, plataformas de salto, portales de vehículo, de gravedad y de velocidad.
 - **Modo práctica** con puntos de control automáticos y manuales.

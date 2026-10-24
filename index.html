@@ -531,7 +531,11 @@ function step(s, hold) {
   const c0 = Math.floor(l), c1 = Math.floor(r);
   for (let c = c0; c <= c1; c++) {
     const arr = L.bH[c]; if (!arr) continue;
-    for (let k = 0; k < arr.length; k++) { const h = L.objs[arr[k]]; if (r > h.hx0 && l < h.hx1 && tp > h.hy0 && bo < h.hy1) { die(s); return; } }
+    for (let k = 0; k < arr.length; k++) {
+      const h = L.objs[arr[k]]; if (!(r > h.hx0 && l < h.hx1 && tp > h.hy0 && bo < h.hy1)) continue;
+      if (h.k === 'W') { const nx = clamp(h.cx, l, r) - h.cx, ny = clamp(h.cy, bo, tp) - h.cy; if (nx * nx + ny * ny >= h.rr * h.rr) continue; }
+      die(s); return;
+    }
   }
   for (let c = c0; c <= c1; c++) {
     const arr = L.bP[c]; if (!arr) continue;
@@ -563,6 +567,7 @@ function mk() {
     G(x, g, y = 0) { o.push({ k: 'G', x, y, w: 1, h: 3, g }); return A; },                 // portal de gravedad
     V(x, v, y = 0) { o.push({ k: 'V', x, y, w: 1, h: 3, v }); return A; },                 // portal de velocidad
     D(x, y, t, a = 1, ref = null) { o.push({ k: 'D', x, y, w: 1, h: 1, t, a, ref }); return A; }, // decoración
+    W(cx, cy, r = 1) { o.push({ k: 'W', x: cx - r, y: cy - r, w: r * 2, h: r * 2, cx, cy, r }); return A; }, // sierra
   };
   return A;
 }
@@ -677,7 +682,7 @@ function level3() {
   };
 }
 
-// zigzag para la onda: hueco de 5 bloques que sube y baja 3 en diagonal
+// zigzag para la onda: hueco de 5 bloques que sube y baja 3 en diagonal (nivel 3)
 function zigzag(a, x0, n) {
   const tri = [0, 1, 2, 3, 2, 1, 0, -1, -2, -3, -2, -1];
   for (let i = 0; i < n; i++) {
@@ -687,174 +692,175 @@ function zigzag(a, x0, n) {
   }
 }
 
+// ---------------------------------------------------------------
+// Nivel 4 · Salto Cósmico (espacio): islas flotantes, gravedad al techo,
+// nave entre asteroides y bola con almohadilla azul.
 function level4() {
   const a = mk();
-  // Cubo
-  a.S(16).S(25, 0, 2);
-  a.B(34, 0, 4, 1).B(38, 0, 4, 2).S(45, 0, 2);
-  a.P(55).S(56, 0, 4);
-  a.S(70).S(78, 0, 2);
-  a.S(88, 0, 4).O(88.5, 2);
-  a.B(100, 0, 10, 1).S(106, 1);
-  a.S(116, 0, 2);
-  // Nave
-  a.M(126, 'ship', 0);
-  a.B(138, 0, 2, 3).B(150, 6, 2, 3).B(162, 0, 2, 4).S(162, 4, 2).B(175, 5, 2, 4);
-  [2, 3, 4, 3, 2, 2, 3, 4].forEach((h, i) => { const x = 186 + i * 3; a.B(x, 0, 3, h).B(x, h + 4, 3, 5 - h); });
-  a.B(216, 0, 2, 3).B(228, 5, 2, 4);
-  // Bola
-  a.M(240, 'ball', 0);
-  a.S(252, 0, 3).S(260, 7, 3, 1).S(268, 0, 3).S(276, 7, 3, 1);
-  a.B(284, 0, 3, 3).B(293, 5, 3, 3);
-  a.S(302, 0, 4).S(311, 7, 4, 1);
-  a.G(320, 1).M(324, 'cube', 0).V(328, 2);
-  // Cubo rápido
-  a.S(340).S(350, 0, 2);
-  a.B(360, 0, 4, 1).B(364, 0, 4, 2).S(371, 0, 2);
-  a.P(382).S(383, 0, 4);
-  a.S(398, 0, 2).S(408, 0, 4).O(408.5, 2);
-  a.S(422).S(432, 0, 2);
+  a.S(14);
+  a.P(22).S(24, 0, 7).B(26, 2, 4, 1);                       // impulso a una isla flotante
+  a.B(37, 0, 1, 1).s(38, 0, 3);                              // bloque y fila de pinchos pequeños
+  a.P(47, 0, 'p').S(48, 0, 2);                               // almohadilla rosa
+  a.P(55).S(56, 0, 15).B(58, 2, 2, 1).B(63, 2.5, 2, 1).B(68, 2, 2, 1); // piedras flotantes sobre el vacío
+  a.S(80).S(88, 0, 2);
+  a.B(96, 5, 22, 1).P(98, 0, 'b').S(106, 4, 1, 1).S(112, 4, 1, 1).P(116, 4, 'b', 1); // carrera por el techo
+  a.S(126);
+  a.M(134, 'ship', 0);                                       // nave entre asteroides
+  [[145, 1], [153, 5], [160, 2], [168, 6], [175, 3]].forEach(([x, y]) => a.B(x, y, 2, 2));
+  a.B(183, 0, 2, 3).B(183, 6, 2, 3);
+  a.B(192, 4, 2, 2).B(200, 0, 3, 2).B(200, 6, 3, 3).B(209, 2, 2, 2);
+  a.M(219, 'ball', 0);                                       // bola
+  a.B(231, 3.5, 6, 1).S(231, 0, 6);
+  a.S(243, 7, 4, 1);
+  a.B(253, 0, 3, 3).B(262, 5, 3, 3);
+  a.P(271, 0, 'b').S(273, 0, 4);
+  a.S(283, 7, 4, 1);
+  a.G(292, 1).M(296, 'cube', 0);
+  a.S(307);                                                  // final: pirámide y pilares
+  a.B(315, 0, 9, 1).B(317, 1, 5, 1).B(319, 2, 1, 1);
+  a.S(330, 0, 2);
+  a.S(338, 0, 3).O(338.5, 2, 'p');
+  a.s(348, 0, 3);
+  a.B(357, 0, 2, 1).S(359, 0, 2).B(361, 0, 2, 2).S(363, 0, 2).B(365, 0, 2, 3);
+  a.S(375, 0, 2);
   return {
-    id: 'l4', name: 'Salto Cósmico', diff: 'Normal', face: 1, stars: 4, song: 'l4', len: 446, objs: a.o,
-    colors: [{ x: 0, bg: '#12a3a3', gr: '#0b7a7a' }, { x: 126, bg: '#2f55e0', gr: '#1f3cb0' }, { x: 240, bg: '#e0377a', gr: '#b0245a' }, { x: 324, bg: '#7a3fe0', gr: '#5a28b0' }]
+    id: 'l4', name: 'Salto Cósmico', diff: 'Normal', face: 1, stars: 4, song: 'l4', len: 390, objs: a.o, theme: 'space',
+    colors: [{ x: 0, bg: '#2a1f7a', gr: '#1a1452' }, { x: 134, bg: '#14286e', gr: '#0c1a4a' }, { x: 219, bg: '#5a1a7a', gr: '#3a1052' }, { x: 296, bg: '#1f3a8a', gr: '#13255c' }]
   };
 }
 
+// ---------------------------------------------------------------
+// Nivel 5 · Torre Neón (neón): escalada con orbes, OVNI entre pisos,
+// robot de saltos largos y cubo rebotando entre suelo y techo con orbes azules.
 function level5() {
   const a = mk();
-  // Cubo
-  a.S(16).S(24, 0, 2);
-  a.B(32, 0, 4, 1).B(36, 0, 4, 2).B(40, 0, 4, 3).S(47, 0, 2);
-  a.S(58, 0, 4).O(58.5, 2);
-  a.S(70, 0, 2).S(78, 0, 2);
-  // OVNI
-  a.M(88, 'ufo', 0);
-  a.B(100, 0, 2, 3).B(113, 6, 2, 3).B(126, 0, 2, 3).S(126, 3, 2).B(139, 6, 2, 3).B(152, 0, 2, 4).B(165, 6, 2, 3);
-  a.B(176, 0, 12, 2).B(176, 7, 12, 2).S(180, 2).S(184, 6, 1, 1);
-  // Robot
-  a.M(196, 'robot', 0);
-  a.S(206).B(214, 0, 3, 3).S(221, 0, 3);
-  a.B(232, 3.3, 10, .7).S(235).S(239);
-  a.B(248, 0, 2, 1).B(253, 0, 2, 2).B(258, 0, 2, 3).S(260, 0, 3);
-  // Cubo rápido con gravedad invertida
-  a.M(272, 'cube', 0).V(276, 2);
-  a.S(288).S(298, 0, 2);
-  a.B(308, 0, 4, 1).B(312, 0, 4, 2).S(319, 0, 2);
-  a.P(330).S(331, 0, 4);
-  a.B(346, 5, 32, 1).G(348, -1).S(358, 4, 1, 1).S(368, 4, 2, 1).G(375, 1);
-  a.S(388).S(398, 0, 2).S(410, 0, 4).O(410.5, 2);
-  a.S(424, 0, 2);
+  a.S(14).S(21);
+  a.B(28, 0, 5, 1).S(33, 0, 21);                             // escalada con orbes sobre un foso
+  a.O(34.5, 2.6).B(38, 3, 4, 1);
+  a.O(43.5, 5.6).B(47, 6, 5, 1);
+  a.S(66, 0, 2).S(74, 0, 3).O(74.5, 2, 'p');
+  a.M(84, 'ufo', 0);                                         // OVNI por los pisos de la torre
+  a.B(96, 4, 10, 1).S(96, 0, 10);
+  a.B(112, 2, 10, 1).B(112, 6, 10, 3).S(112, 0, 10);
+  a.B(128, 4, 10, 1).S(128, 8, 10, 1);
+  a.B(144, 0, 2, 4).B(151, 6, 2, 3);
+  a.M(160, 'robot', 0);                                      // robot: saltos largos
+  a.s(170, 0, 2);
+  a.B(178, 0, 2, 2).S(178, 2, 2);
+  a.S(188, 0, 5);
+  a.B(200, 0, 7, 1).s(203, 1, 2);
+  a.S(213).B(219, 0, 4, 3);
+  a.M(230, 'cube', 0).V(234, 2);                             // cubo rebotando con orbes azules
+  a.B(244, 6, 34, 1);
+  a.S(248, 0, 6).O(246.5, 1.4, 'b');
+  a.S(258, 5, 5, 1).O(256.5, 3.6, 'b');
+  a.S(268, 0, 6).O(266.5, 1.4, 'b');
+  a.G(279, 1);
+  a.S(290).S(300, 0, 2).S(312, 0, 3).O(312.5, 2);
   return {
-    id: 'l5', name: 'Torre Neón', diff: 'Difícil', face: 2, stars: 5, song: 'l5', len: 438, objs: a.o,
-    colors: [{ x: 0, bg: '#1f1fa8', gr: '#141480' }, { x: 88, bg: '#e01f9e', gr: '#a8147a' }, { x: 196, bg: '#1fa86a', gr: '#147a4c' }, { x: 272, bg: '#e0a01f', gr: '#a87414' }]
+    id: 'l5', name: 'Torre Neón', diff: 'Difícil', face: 2, stars: 5, song: 'l5', len: 326, objs: a.o, theme: 'neon', accent: '#3ff6ff',
+    colors: [{ x: 0, bg: '#140a3a', gr: '#0c0626' }, { x: 84, bg: '#2a0a4a', gr: '#1a0630' }, { x: 160, bg: '#0a2a3a', gr: '#061a26' }, { x: 230, bg: '#3a0a2a', gr: '#26061a' }]
   };
 }
 
+// ---------------------------------------------------------------
+// Nivel 6 · Eco Digital (digital): sierras giratorias, onda entre pasillos
+// de pinchos y sierras, araña y bola esquivando sierras.
 function level6() {
   const a = mk();
-  // Cubo
-  a.S(16).S(24, 0, 2).S(33, 0, 2);
-  a.B(42, 0, 4, 1).B(46, 0, 4, 2).S(53, 0, 2);
-  // Onda
-  a.M(62, 'wave', 0);
-  a.B(74, 0, 2, 5).B(84, 4, 2, 5).B(94, 0, 2, 5).B(104, 4, 2, 5);
-  zigzag(a, 114, 36);
-  a.B(156, 0, 2, 4).B(164, 5, 2, 4);
-  // Araña
-  a.M(174, 'spider', 0);
-  a.S(186, 0, 3).S(194, 7, 3, 1).S(202, 0, 3);
-  a.B(210, 0, 3, 3).B(218, 5, 3, 3);
-  a.B(227, 3, 10, 1).S(230, 0, 7).S(230, 7, 7, 1);
-  a.S(242, 0, 3);
-  // Bola
-  a.G(250, 1).M(254, 'ball', 0);
-  a.S(266, 0, 3).S(274, 7, 3, 1).S(282, 0, 3).S(290, 7, 3, 1);
-  a.B(298, 0, 3, 3).B(307, 5, 3, 3);
-  a.G(316, 1).M(320, 'cube', 0).V(324, 2);
-  // Cubo rápido
-  a.S(336).S(346, 0, 2);
-  a.B(356, 0, 4, 1).B(360, 0, 4, 2).S(367, 0, 2);
-  a.P(378).S(379, 0, 4);
-  a.S(394, 0, 4).O(394.5, 2);
-  a.S(408, 0, 2).S(418).S(428, 0, 2);
+  a.S(14);
+  a.W(24, .2, 1);                                           // sierra en el suelo
+  a.S(33).W(33.5, 4.6, 1.1);                                 // pincho bajo una sierra alta (no saltes de más)
+  a.B(42, 0, 7, 1).W(46, 1.2, .9);                           // sierra sobre una plataforma
+  a.S(57, 0, 2);
+  a.M(68, 'wave', 0);                                        // onda
+  a.S(80, 0, 10).S(80, 8, 10, 1);
+  a.B(94, 0, 10, 2).S(94, 2, 10).B(94, 7, 10, 2).S(94, 6, 10, 1);
+  a.W(112, 4.5, 1.2);
+  a.W(121, 1, 1.2).W(121, 8, 1.2);
+  a.W(130, 4.5, 1.2);
+  a.S(138, 0, 6).S(138, 8, 6, 1);
+  a.M(150, 'spider', 0);                                     // araña con sierras
+  a.S(162, 0, 3).W(171, 8, 1.2).W(179, 0, 1.2);
+  a.B(187, 0, 3, 3).B(195, 5, 3, 3);
+  a.B(201, 3, 12, 1).W(206, 0, 1).W(210, 0, 1).W(206, 8, 1).W(210, 8, 1);
+  a.G(219, 1).M(223, 'ball', 0);                             // bola entre sierras
+  a.W(235, 0, 1.2).W(243, 8, 1.2).W(251, 0, 1.2).W(259, 8, 1.2);
+  a.S(267, 0, 4).S(276, 7, 4, 1);
+  a.G(285, 1).M(289, 'cube', 0).V(293, 2);                   // cubo x2 con sierras
+  a.S(305).W(316, .2, 1);
+  a.B(325, 0, 6, 1).W(331.5, 1, 1);
+  a.S(342, 0, 2).S(352).W(352.5, 4.6, 1.1);
+  a.W(363, .2, 1).S(373, 0, 2);
   return {
-    id: 'l6', name: 'Eco Digital', diff: 'Más difícil', face: 3, stars: 7, song: 'l6', len: 442, objs: a.o,
-    colors: [{ x: 0, bg: '#0f8f6f', gr: '#0a6b52' }, { x: 62, bg: '#1f6fe0', gr: '#1550a8' }, { x: 174, bg: '#a01fe0', gr: '#7414a8' }, { x: 254, bg: '#e03f1f', gr: '#a82c14' }, { x: 320, bg: '#1fb0c8', gr: '#14849a' }]
+    id: 'l6', name: 'Eco Digital', diff: 'Más difícil', face: 3, stars: 7, song: 'l6', len: 388, objs: a.o, theme: 'digital',
+    colors: [{ x: 0, bg: '#06331f', gr: '#032014' }, { x: 68, bg: '#062a3a', gr: '#031a26' }, { x: 150, bg: '#1a2a06', gr: '#101a03' }, { x: 223, bg: '#063a33', gr: '#032620' }, { x: 289, bg: '#0a1a33', gr: '#061020' }]
   };
 }
 
+// ---------------------------------------------------------------
+// Nivel 7 · Tormenta Polar (nieve): empieza lento y acelera a x3,
+// nave entre carámbanos, OVNI con orbes rosas y bola rápida.
 function level7() {
   const a = mk();
-  a.V(4, 2);
-  // Cubo x2
-  a.S(18).S(28, 0, 2);
-  a.B(38, 0, 4, 1).B(42, 0, 4, 2).S(49, 0, 2);
-  a.P(60).S(61, 0, 4);
-  a.S(76, 0, 2);
-  // Nave x2
-  a.M(86, 'ship', 0);
-  a.B(100, 0, 2, 4).B(114, 5, 2, 4).B(128, 0, 2, 5).S(128, 5, 2).B(142, 4, 2, 5);
-  [1, 2, 3, 4, 5, 4, 3, 2, 1].forEach((h, i) => { const x = 154 + i * 3; a.B(x, 0, 3, h).B(x, h + 4, 3, 5 - h); });
-  // Onda x2
-  a.M(188, 'wave', 0);
-  a.B(200, 0, 2, 5).B(212, 4, 2, 5).B(224, 0, 2, 5);
-  zigzag(a, 236, 30);
-  // Robot x1
-  a.M(274, 'robot', 0).V(276, 1);
-  a.S(286).B(294, 0, 3, 3).S(302, 0, 3);
-  a.B(312, 0, 2, 1).B(317, 0, 2, 2).B(322, 0, 2, 3).S(324, 0, 3);
-  // OVNI
-  a.M(336, 'ufo', 0);
-  a.B(348, 0, 2, 3).B(361, 6, 2, 3).B(374, 0, 2, 3).S(374, 3, 2).B(387, 6, 2, 3);
-  // Cubo x3
-  a.M(398, 'cube', 0).V(402, 3);
-  a.S(420).S(434, 0, 2);
-  a.B(448, 0, 5, 1).B(453, 0, 5, 2).S(461, 0, 2);
-  a.S(478, 0, 2);
+  a.V(2, 0);                                                 // lento
+  a.S(12).S(19).s(26, 0, 2);
+  a.B(34, 3, 8, 1).S(34, 2, 8, 1);                           // carámbanos: ¡no saltes debajo!
+  a.V(46, 3);                                                // rapidísimo
+  a.S(60, 0, 2).S(74, 0, 3);
+  a.B(88, 0, 6, 1).S(98, 0, 2);
+  a.M(110, 'ship', 0).V(112, 2);                             // nave entre carámbanos
+  a.B(124, 7, 6, 2).S(124, 6, 6, 1);
+  a.B(137, 0, 6, 2).S(137, 2, 6);
+  a.B(150, 6, 6, 3).S(150, 5, 6, 1).B(150, 0, 6, 1);
+  a.B(163, 0, 6, 3).S(163, 3, 6).B(163, 8, 6, 1);
+  a.B(176, 5, 3, 4).S(176, 4, 3, 1).B(183, 0, 3, 4).S(183, 4, 3);
+  a.M(196, 'ufo', 0).V(198, 1);                              // OVNI con orbes rosas
+  a.B(210, 0, 2, 3).S(210, 3, 2).O(206, 5, 'p');
+  a.B(222, 6, 2, 3).S(222, 5, 2, 1);
+  a.B(234, 0, 2, 4).S(234, 4, 2).O(230, 6, 'p');
+  a.B(246, 5, 2, 4).S(246, 4, 2, 1);
+  a.M(258, 'ball', 0).V(260, 2);                             // bola rápida
+  a.S(272, 0, 3).S(281, 7, 3, 1).S(290, 0, 3).S(299, 7, 3, 1);
+  a.G(308, 1).M(312, 'cube', 0).V(316, 3);                   // cubo x3 en el hielo
+  a.S(332).s(346, 0, 3);
+  a.B(358, 0, 6, 1).B(364, 0, 6, 2).S(373, 0, 2);
+  a.S(390, 0, 3);
   return {
-    id: 'l7', name: 'Tormenta Polar', diff: 'Insano', face: 4, stars: 9, song: 'l7', len: 496, objs: a.o,
-    colors: [{ x: 0, bg: '#2a8fe0', gr: '#1c6ab0' }, { x: 86, bg: '#5a3fe0', gr: '#3f2ab0' }, { x: 188, bg: '#1fc8e0', gr: '#1498a8' }, { x: 274, bg: '#8a9ab0', gr: '#5f6c80' }, { x: 336, bg: '#3f5ae0', gr: '#2a3fb0' }, { x: 398, bg: '#5aa0f0', gr: '#3a74c0' }]
+    id: 'l7', name: 'Tormenta Polar', diff: 'Insano', face: 4, stars: 9, song: 'l7', len: 408, objs: a.o, theme: 'snow',
+    colors: [{ x: 0, bg: '#3a7ab0', gr: '#2a5a86' }, { x: 46, bg: '#2a5aa0', gr: '#1c4078' }, { x: 110, bg: '#4a6ab8', gr: '#33508a' }, { x: 196, bg: '#2a8ab0', gr: '#1c6886' }, { x: 258, bg: '#5a5ab8', gr: '#40408a' }, { x: 312, bg: '#3a90d0', gr: '#286aa0' }]
   };
 }
 
+// ---------------------------------------------------------------
+// Nivel 8 · Abismo Final (brasas): sierras por todas partes, gravedad
+// que cambia sin parar y los 7 vehículos en tramos cortos.
 function level8() {
   const a = mk();
-  a.V(4, 2);
-  // Cubo x2
-  a.S(18).S(27, 0, 2);
-  a.B(37, 0, 4, 1).B(41, 0, 4, 2).S(48, 0, 2);
-  a.S(60, 0, 4).O(60.5, 2);
-  // Nave x2
-  a.M(72, 'ship', 0);
-  a.B(86, 0, 2, 4).B(99, 5, 2, 4).B(112, 0, 2, 5).B(125, 4, 2, 5);
-  [2, 3, 4, 5, 4, 3, 2].forEach((h, i) => { const x = 137 + i * 3; a.B(x, 0, 3, h).B(x, h + 4, 3, 5 - h); });
-  // Bola x2
-  a.M(166, 'ball', 0);
-  a.S(178, 0, 3).S(187, 7, 3, 1).S(196, 0, 3).S(205, 7, 3, 1);
-  // OVNI x2
-  a.G(212, 1).M(216, 'ufo', 0);
-  a.B(230, 0, 2, 3).B(244, 6, 2, 3).B(258, 0, 2, 3);
-  // Onda x2
-  a.M(270, 'wave', 0);
-  a.B(282, 0, 2, 5).B(294, 4, 2, 5);
-  zigzag(a, 306, 30);
-  // Robot x1
-  a.M(344, 'robot', 0).V(346, 1);
-  a.S(356).B(364, 0, 3, 3).S(372, 0, 3);
-  a.B(382, 3.3, 10, .7).S(385).S(389);
-  // Araña x1
-  a.M(400, 'spider', 0);
-  a.S(412, 0, 3).S(420, 7, 3, 1).S(428, 0, 3);
-  a.B(436, 0, 3, 3).B(444, 5, 3, 3);
-  // Cubo x3
-  a.G(454, 1).M(458, 'cube', 0).V(462, 3);
-  a.S(478).S(492, 0, 2);
-  a.B(506, 0, 5, 1).B(511, 0, 5, 2).S(519, 0, 2);
-  a.P(534).S(535, 0, 5);
-  a.S(554, 0, 2).S(570, 0, 2);
+  a.V(2, 2);
+  a.S(16).W(26, .2, 1);
+  a.B(34, 5, 20, 1).P(36, 0, 'b').W(44, 4.8, 1).P(50, 4, 'b', 1);   // al techo y de vuelta entre sierras
+  a.S(60, 0, 2);
+  a.M(70, 'ship', 0);                                        // nave entre sierras
+  a.W(84, 2, 1.5).W(97, 7, 1.5).W(110, 3, 1.5).W(110, 8.5, 1.2).W(123, 6, 1.5);
+  a.M(134, 'wave', 0);                                       // onda entre sierras
+  a.W(146, 1.2, 1.4).W(156, 7.8, 1.4).W(166, 1.2, 1.4).W(176, 7.8, 1.4);
+  a.M(186, 'robot', 0).V(188, 1);                            // robot
+  a.W(198, .2, 1).B(206, 0, 3, 3).S(213, 0, 4);
+  a.M(224, 'spider', 0);                                     // araña
+  a.S(236, 0, 3).W(244, 8, 1.2).S(252, 0, 3);
+  a.G(260, 1).M(264, 'ufo', 0);                              // OVNI
+  a.W(276, 1, 1.4).W(289, 8, 1.4).W(302, 1, 1.4);
+  a.M(314, 'ball', 0).V(316, 2);                             // bola
+  a.W(328, 0, 1.2).S(337, 7, 3, 1).W(346, 0, 1.2).S(355, 7, 3, 1);
+  a.G(364, 1).M(368, 'cube', 0).V(372, 3);                   // cubo x3 final
+  a.S(388).W(402, .2, 1);
+  a.B(414, 0, 6, 1).W(421, 1.2, .9).B(424, 0, 6, 2);
+  a.S(440, 0, 2).S(456, 0, 3);
+  a.W(472, .2, 1).S(486, 0, 2);
   return {
-    id: 'l8', name: 'Abismo Final', diff: 'Demonio', face: 5, stars: 10, song: 'l8', len: 586, objs: a.o,
-    colors: [{ x: 0, bg: '#5a0a0a', gr: '#3a0606' }, { x: 72, bg: '#8a0a3a', gr: '#5a0626' }, { x: 166, bg: '#3a0a5a', gr: '#26063a' }, { x: 270, bg: '#0a2a5a', gr: '#061a3a' }, { x: 344, bg: '#5a3a0a', gr: '#3a2606' }, { x: 400, bg: '#2a0a2a', gr: '#1a061a' }, { x: 458, bg: '#a01010', gr: '#700a0a' }]
+    id: 'l8', name: 'Abismo Final', diff: 'Demonio', face: 5, stars: 10, song: 'l8', len: 502, objs: a.o, theme: 'ember',
+    colors: [{ x: 0, bg: '#3a0606', gr: '#240303' }, { x: 70, bg: '#4a0a14', gr: '#2e060c' }, { x: 134, bg: '#2a0a1a', gr: '#1a0610' }, { x: 186, bg: '#4a1a06', gr: '#2e1003' }, { x: 224, bg: '#3a0626', gr: '#240316' }, { x: 264, bg: '#4a0a0a', gr: '#2e0606' }, { x: 314, bg: '#3a1406', gr: '#240c03' }, { x: 368, bg: '#5a0606', gr: '#380303' }]
   };
 }
 
@@ -868,12 +874,13 @@ function buildLevel(def) {
   objs.forEach((o, i) => {
     o.i = i;
     if (o.k === 'S') { o.hx0 = o.x + .37; o.hx1 = o.x + .63; o.hy0 = o.y + (o.f ? .38 : .12); o.hy1 = o.y + (o.f ? .88 : .62); }
+    if (o.k === 'W') { o.rr = o.r * .8; o.hx0 = o.cx - o.rr; o.hx1 = o.cx + o.rr; o.hy0 = o.cy - o.rr; o.hy1 = o.cy + o.rr; }
     if (o.k === 's') { o.hx0 = o.x + .37; o.hx1 = o.x + .63; o.hy0 = o.y + (o.f ? .66 : .04); o.hy1 = o.y + (o.f ? .96 : .34); }
     const c0 = Math.floor(o.x), c1 = Math.floor(o.x + o.w - 1e-6);
     for (let c = c0; c <= c1; c++) {
       add(L.bR, c, i);
       if (o.k === 'B') add(L.bS, c, i);
-      else if (o.k === 'S' || o.k === 's') add(L.bH, c, i);
+      else if (o.k === 'S' || o.k === 's' || o.k === 'W') add(L.bH, c, i);
       else if (o.k === 'P') add(L.bP, c, i);
       else if (o.k === 'O') add(L.bO, c, i);
     }
@@ -1421,7 +1428,7 @@ function render(dt) {
   const bgTop = shade(col.bg, .12), bgBot = shade(col.bg, -.35);
   const bgg = g.createLinearGradient(0, 0, 0, H); bgg.addColorStop(0, rgba(bgTop)); bgg.addColorStop(1, rgba(bgBot));
   g.fillStyle = bgg; g.fillRect(0, 0, W, H);
-  BEAT = CFG.pulse ? AU.beat() : 0;
+  BEAT = CFG.pulse ? AU.beat() : 0; THEME = L.theme || null; ACCENT = L.accent || '#fff';
   // cuadros de fondo: se desplazan despacio (10 veces más lento que el nivel). Cada cuadro conserva
   // su posición y su tono en el mundo, así que nunca cambian de forma al moverse.
   const T = Math.max(W, H) / 7.5, offX = camX * U * .1, offY = camY * U * .04, base = H + offY;
@@ -1436,13 +1443,8 @@ function render(dt) {
     }
   }
   if (CFG.quality) drawMidground(g, L, col, camX, Y(0));
-  // motas de luz flotando
-  for (let i = 0; i < (CFG.quality ? 18 : 0); i++) {
-    const sp = .3 + hsh(i + 5) * .6, z = U * (.06 + hsh(i + 7) * .1);
-    const px = ((hsh(i) * W * 1.3 - camX * U * .2 * sp) % W + W) % W;
-    const py = H - ((hsh(i + 3) * H + sc.anim * U * sp * .6) % (H + U));
-    g.fillStyle = `rgba(255,255,255,${.08 + .1 * hsh(i + 9)})`; g.fillRect(px, py, z, z);
-  }
+  // partículas de ambiente según el tema del nivel
+  if (CFG.quality) drawAmbient(g, sc, camX);
   let sx = 0, sy = 0; if (sc.shake > 0) { sx = (Math.random() - .5) * sc.shake * U * .5; sy = (Math.random() - .5) * sc.shake * U * .5; }
   g.save(); g.translate(sx, sy);
 
@@ -1469,6 +1471,7 @@ function render(dt) {
   drawBlocks(g, vis, X, Y, col);
   for (const o of vis) {
     if (o.k === 'S' || o.k === 's') drawSpike(g, o, X, Y);
+    else if (o.k === 'W') drawSaw(g, o, X, Y, sc.anim);
     else if (o.k === 'P') drawPad(g, o, X, Y, s.used[o.i], sc.anim);
     else if (o.k === 'O') drawOrb(g, o, X, Y, s.used[o.i], sc.anim);
     else if (o.k === 'M' || o.k === 'G' || o.k === 'V') drawPortal(g, o, X, Y, sc.anim, p.x > o.x + .5);
@@ -1551,7 +1554,7 @@ function render(dt) {
   g.globalAlpha = 1;
   g.restore();
 }
-let drawStamp = 0, BEAT = 0;
+let drawStamp = 0, BEAT = 0, THEME = null, ACCENT = '#fff';
 const CANVAS_FONT = '"Lilita One","Arial Black",Impact,sans-serif';
 
 function drawGround(g, col, gy, top, camX) {
@@ -1589,16 +1592,83 @@ function drawBlocks(g, vis, X, Y, col) {
     border.rect(x + lw / 2, y + lw / 2, w - lw, h - lw);
     if (b.w >= 2 && b.h >= .9) { lights.rect(x + U * .16, y + U * .16, z, z); lights.rect(x + w - U * .16 - z, y + U * .16, z, z); }
   }
-  g.fillStyle = 'rgba(0,0,0,.86)'; g.fill(fill);
+  const th = THEME;
+  g.fillStyle = th === 'ember' ? 'rgba(26,4,2,.92)' : th === 'space' ? 'rgba(6,6,30,.9)' : 'rgba(0,0,0,.86)'; g.fill(fill);
   // brillo superior: un degradado por bloque (depende de su altura en pantalla)
   const lc = shade(col.bg, .55), top = rgba(lc, .55), clear = rgba(lc, 0);
   for (const [b, x, y, w, h] of bs) {
     const gh = Math.min(h, U * 1.1), gr = g.createLinearGradient(0, y, 0, y + gh);
     gr.addColorStop(0, top); gr.addColorStop(1, clear); g.fillStyle = gr; g.fillRect(x, y, w, gh);
   }
-  g.strokeStyle = 'rgba(255,255,255,.16)'; g.lineWidth = Math.max(1, U * .035); g.stroke(grid);
-  g.strokeStyle = '#fff'; g.lineWidth = lw; g.stroke(border);
-  g.fillStyle = `rgba(255,255,255,${.55 + .45 * BEAT})`; g.fill(lights);
+  const edge = th === 'neon' ? ACCENT : th === 'ember' ? '#ffb070' : th === 'digital' ? '#b8ffd8' : th === 'snow' ? '#e8f6ff' : '#fff';
+  g.strokeStyle = th === 'digital' ? 'rgba(90,255,170,.32)' : th === 'neon' ? rgba(hexRgb(ACCENT), .3) : 'rgba(255,255,255,.16)'; g.lineWidth = Math.max(1, U * .035); g.stroke(grid);
+  if (th === 'neon') { g.strokeStyle = rgba(hexRgb(ACCENT), .35 + .3 * BEAT); g.lineWidth = lw * 3; g.stroke(border); }
+  g.strokeStyle = edge; g.lineWidth = lw; g.stroke(border);
+  if (th === 'snow') {
+    // nieve sobre los bloques
+    const snow = new Path2D();
+    for (const [b, x, y, w] of bs) { snow.rect(x - U * .04, y - U * .08, w + U * .08, U * .22); for (let i = 0; i < b.w; i++) { if (hsh(b.x * 3 + i) > .45) { snow.moveTo(x + (i + .3) * U, y + U * .14); snow.arc(x + (i + .3) * U + U * .09, y + U * .14, U * .09, Math.PI, 0, true); } } }
+    g.fillStyle = '#f4fbff'; g.fill(snow);
+  }
+  g.fillStyle = th === 'neon' ? ACCENT : th === 'ember' ? `rgba(255,170,80,${.55 + .45 * BEAT})` : `rgba(255,255,255,${.55 + .45 * BEAT})`; g.fill(lights);
+}
+// ambiente de cada tema: estrellas, nieve, brasas, ceros y unos, rayas de neón o motas de luz
+function drawAmbient(g, sc, camX) {
+  const t = sc.anim, th = THEME;
+  const wrap = (v, m) => ((v % m) + m) % m;
+  if (th === 'space') {
+    for (let i = 0; i < 46; i++) {
+      const px = wrap(hsh(i) * W * 1.5 - camX * U * .05, W), py = hsh(i + 50) * H * .8, tw = .4 + .6 * Math.abs(Math.sin(t * (1 + hsh(i + 9) * 2) + i));
+      const z = U * (.04 + hsh(i + 7) * .07); g.fillStyle = `rgba(255,255,255,${.25 + .55 * tw})`;
+      g.fillRect(px - z / 2, py - z / 2, z, z);
+      if (hsh(i + 3) > .8) { g.fillRect(px - z * 2, py - z / 6, z * 4, z / 3); g.fillRect(px - z / 6, py - z * 2, z / 3, z * 4); }
+    }
+  } else if (th === 'snow') {
+    g.fillStyle = 'rgba(255,255,255,.75)';
+    for (let i = 0; i < 44; i++) {
+      const sp = .5 + hsh(i + 5), z = U * (.05 + hsh(i + 7) * .09);
+      const py = wrap(hsh(i + 3) * H + t * U * sp * 1.2, H + U) - U * .5, px = wrap(hsh(i) * W * 1.3 - camX * U * .25 * sp - t * U * .6 + Math.sin(t * 2 + i) * U * .3, W);
+      g.beginPath(); g.arc(px, py, z, 0, TAU); g.fill();
+    }
+  } else if (th === 'ember') {
+    for (let i = 0; i < 34; i++) {
+      const sp = .4 + hsh(i + 5) * .8, z = U * (.05 + hsh(i + 7) * .08), fl = .5 + .5 * Math.sin(t * 9 + i * 3);
+      const py = H - wrap(hsh(i + 3) * H + t * U * sp * 1.4, H + U), px = wrap(hsh(i) * W * 1.3 - camX * U * .2 * sp + Math.sin(t * 1.5 + i) * U * .4, W);
+      g.fillStyle = `rgba(255,${120 + 80 * fl | 0},40,${.35 + .4 * fl})`; g.fillRect(px, py, z, z);
+    }
+  } else if (th === 'digital') {
+    g.font = `${Math.round(U * .42)}px monospace`; g.textAlign = 'center'; g.fillStyle = 'rgba(120,255,180,.3)';
+    for (let i = 0; i < 26; i++) {
+      const sp = .4 + hsh(i + 5) * .6, px = wrap(hsh(i) * W * 1.3 - camX * U * .15, W), py = wrap(hsh(i + 3) * H + t * U * sp * 1.5, H + U);
+      g.fillText(hsh(i + Math.floor(t * 2 + i)) > .5 ? '1' : '0', px, py);
+    }
+  } else if (th === 'neon') {
+    for (let i = 0; i < 12; i++) {
+      const sp = 1 + hsh(i + 5) * 2, px = W - wrap(hsh(i) * W * 2 + t * U * sp * 6 + camX * U * .3, W * 1.5) + U * 3, py = hsh(i + 3) * H * .85, len = U * (2 + hsh(i + 7) * 4);
+      g.fillStyle = rgba(hexRgb(ACCENT), .22); g.fillRect(px, py, len, Math.max(1, U * .06));
+    }
+  } else {
+    for (let i = 0; i < 18; i++) {
+      const sp = .3 + hsh(i + 5) * .6, z = U * (.06 + hsh(i + 7) * .1);
+      const px = wrap(hsh(i) * W * 1.3 - camX * U * .2 * sp, W), py = H - wrap(hsh(i + 3) * H + t * U * sp * .6, H + U);
+      g.fillStyle = `rgba(255,255,255,${.08 + .1 * hsh(i + 9)})`; g.fillRect(px, py, z, z);
+    }
+  }
+}
+// sierra giratoria
+function drawSaw(g, o, X, Y, t) {
+  const cx = X(o.cx), cy = Y(o.cy), R = o.r * U;
+  if (cx < -R * 2 || cx > W + R * 2) return;
+  g.save(); g.translate(cx, cy); g.rotate(t * 5);
+  const n = 14; g.beginPath();
+  for (let i = 0; i < n * 2; i++) { const a = i * Math.PI / n, rr = i % 2 ? R * .8 : R; g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+  g.closePath(); g.fillStyle = THEME === 'ember' ? '#2a0606' : '#111'; g.fill();
+  g.strokeStyle = '#fff'; g.lineWidth = Math.max(1.5, U * .06); g.lineJoin = 'round'; g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,.5)'; g.lineWidth = Math.max(1, U * .04);
+  g.beginPath(); g.arc(0, 0, R * .55, 0, TAU); g.stroke();
+  for (let i = 0; i < 3; i++) { g.rotate(TAU / 3); g.beginPath(); g.moveTo(R * .15, 0); g.lineTo(R * .55, 0); g.stroke(); }
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(0, 0, R * .14, 0, TAU); g.fill();
+  g.restore();
 }
 // un bloque suelto (miniaturas de la ayuda)
 function drawBlock(g, b, X, Y, col) { drawBlocks(g, [Object.assign({ k: 'B' }, b)], X, Y, col); }
@@ -1609,6 +1679,7 @@ function drawHitboxes(g, sc, vis, X, Y) {
   for (const o of vis) {
     if (o.k === 'B') box(o.x, o.y, o.x + o.w, o.y + o.h, 'rgba(60,140,255,.95)');
     else if (o.k === 'S' || o.k === 's') box(o.hx0, o.hy0, o.hx1, o.hy1, 'rgba(255,40,40,.95)');
+    else if (o.k === 'W') { g.strokeStyle = 'rgba(255,40,40,.95)'; g.beginPath(); g.arc(X(o.cx), Y(o.cy), o.rr * U, 0, TAU); g.stroke(); }
     else if (o.k === 'O') box(o.x - .15, o.y - .15, o.x + 1.15, o.y + 1.15, 'rgba(60,255,90,.9)');
     else if (o.k === 'P') box(o.x + .1, o.f ? o.y + 1 - PAD_ZONE : o.y, o.x + .9, o.f ? o.y + 1 : o.y + PAD_ZONE, 'rgba(60,255,90,.9)');
   }
@@ -1638,6 +1709,18 @@ function drawMidground(g, L, col, camX, gy) {
   for (let m = Math.floor(off / step) - 2, m1 = Math.ceil((off + W / U) / step) + 1; m <= m1; m++) {
     const r1 = hsh(m * 1.7 + seed), r2 = hsh(m * 7.3 + 11 + seed), type = Math.floor(hsh(m * 3.1 + 5 + seed) * 3);
     const x = (m * step - off) * U, w = (2.2 + r1 * 2.6) * U, h = (2.2 + r2 * 4.5) * U;
+    if (THEME === 'space') {    // planetas flotando con anillo
+      const pr = w * .32, py = gy - h - U * 1.5;
+      shapes.moveTo(x + w / 2 + pr, py); shapes.arc(x + w / 2, py, pr, 0, TAU);
+      if (type !== 1) { wins.moveTo(x + w / 2 + pr * 1.7, py); wins.ellipse(x + w / 2, py, pr * 1.7, pr * .35, -.3, 0, TAU); }
+      continue;
+    }
+    if (THEME === 'snow' || THEME === 'ember') {   // montañas nevadas o rocas afiladas
+      const tipx = x + w * .5, base0 = x - w * .3, base1 = x + w * 1.3;
+      if (THEME === 'ember') { shapes.moveTo(base0, gy); shapes.lineTo(x + w * .2, gy - h * .55); shapes.lineTo(x + w * .35, gy - h * .5); shapes.lineTo(tipx, gy - h); shapes.lineTo(x + w * .7, gy - h * .6); shapes.lineTo(x + w * .9, gy - h * .65); shapes.lineTo(base1, gy); shapes.closePath(); }
+      else { shapes.moveTo(base0, gy); shapes.lineTo(tipx, gy - h); shapes.lineTo(base1, gy); shapes.closePath(); wins.moveTo(tipx, gy - h); wins.lineTo(tipx - w * .22, gy - h * .72); wins.lineTo(tipx - w * .05, gy - h * .78); wins.lineTo(tipx + w * .1, gy - h * .7); wins.lineTo(tipx + w * .22, gy - h * .72); wins.closePath(); }
+      continue;
+    }
     if (type === 0) {           // torre con ventanas
       shapes.rect(x, gy - h, w, h);
       for (let wy = gy - h + U * .5; wy < gy - U * .6; wy += U * .9) for (let wx = x + U * .45; wx < x + w - U * .5; wx += U * .8) wins.rect(wx, wy, U * .3, U * .3);
@@ -1649,7 +1732,8 @@ function drawMidground(g, L, col, camX, gy) {
   }
   g.fillStyle = rgba(shade(col.bg, -.3), .38); g.fill(shapes);
   g.strokeStyle = rgba(shade(col.bg, .45), .22); g.lineWidth = Math.max(1, U * .05); g.stroke(shapes);
-  g.fillStyle = `rgba(255,255,255,${.12 + .2 * BEAT})`; g.fill(wins);
+  if (THEME === 'space') { g.strokeStyle = 'rgba(255,255,255,.28)'; g.lineWidth = Math.max(1, U * .06); g.stroke(wins); return; }
+  g.fillStyle = THEME === 'snow' ? 'rgba(255,255,255,.55)' : THEME === 'neon' ? rgba(hexRgb(ACCENT), .3 + .3 * BEAT) : THEME === 'digital' ? `rgba(120,255,180,${.15 + .2 * BEAT})` : `rgba(255,255,255,${.12 + .2 * BEAT})`; g.fill(wins);
 }
 // decoración del nivel (no choca con nada)
 function drawDeco(g, o, X, Y, col, t) {
@@ -1679,8 +1763,11 @@ function drawSpike(g, o, X, Y) {
   const small = o.k === 's', hg = (small ? .5 : 1) * U;
   const x = X(o.x), base = o.f ? Y(o.y + 1) : Y(o.y), tip = o.f ? base + hg : base - hg;
   const inset = small ? U * .14 : U * .05;
-  const gr = g.createLinearGradient(0, tip, 0, base); gr.addColorStop(0, '#3a3a3a'); gr.addColorStop(1, '#000');
-  g.fillStyle = gr; g.lineJoin = 'round'; g.lineWidth = Math.max(1.5, U * .065); g.strokeStyle = '#fff';
+  const gr = g.createLinearGradient(0, tip, 0, base);
+  if (THEME === 'snow') { gr.addColorStop(0, '#bfe6ff'); gr.addColorStop(1, '#1c4a7a'); }
+  else if (THEME === 'ember') { gr.addColorStop(0, '#7a1a0a'); gr.addColorStop(1, '#1a0202'); }
+  else { gr.addColorStop(0, '#3a3a3a'); gr.addColorStop(1, '#000'); }
+  g.fillStyle = gr; g.lineJoin = 'round'; g.lineWidth = Math.max(1.5, U * .065); g.strokeStyle = THEME === 'neon' ? ACCENT : '#fff';
   poly(g, [x + inset, base, x + U / 2, tip, x + U - inset, base]); g.fill(); g.stroke();
 }
 function drawPad(g, o, X, Y, used, t) {
@@ -2067,6 +2154,7 @@ function buildHelp() {
   }
   const objs = [
     ['spike', 'Pinchos', 'Tocarlos es perder. Sáltalos.'],
+    ['saw', 'Sierras', 'Giran sin parar y cortan todo lo que tocan. Esquívalas.'],
     ['block', 'Bloques', 'Puedes aterrizar encima, pero chocar de lado destruye tu vehículo.'],
     ['orbY', 'Orbe amarillo / rosa', 'Pulsa mientras lo atraviesas para saltar en el aire.'],
     ['orbB', 'Orbe azul', 'Pulsa sobre él para invertir la gravedad.'],
@@ -2092,6 +2180,7 @@ function objCanvas(c, k) {
     switch (k) {
       case 'spike': drawSpike(g, { k: 'S', x: 0, y: 0, f: 0 }, X, Y); break;
       case 'block': drawBlock(g, { x: 0, y: 0, w: 1, h: 1 }, X, Y, col); break;
+      case 'saw': drawSaw(g, { cx: .5, cy: .5, r: .8 }, X, Y, 0); break;
       case 'orbY': drawOrb(g, { x: 0, y: .25, c: 'y' }, X, Y, 0, 0); break;
       case 'orbB': drawOrb(g, { x: 0, y: .25, c: 'b' }, X, Y, 0, 0); break;
       case 'pad': drawPad(g, { x: 0, y: .3, c: 'y', f: 0 }, X, Y, 0, 0); break;
