@@ -54,3 +54,29 @@ En móvil: dos dedos para mover la cámara y pellizcar para el zoom.
 | Silenciar | `M` |
 | Reiniciar | `R` |
 | Práctica: poner / quitar punto de control | `Z` / `X` |
+
+---
+
+# HYPERSPACE 4D: Dimensional Break
+
+Juego de exploración en **cuatro dimensiones espaciales** en un solo archivo:
+[`hyperspace4d/index.html`](hyperspace4d/index.html). Funciona sin conexión, sin librerías ni imágenes.
+
+- **Motor 4D real**: matrices de rotación en los seis planos (XY, XZ, YZ, XW, YW, ZW), proyección en
+  perspectiva 4D → 3D → 2D y cortes exactos de hiperprismas con el hiperplano W del jugador.
+- **5 niveles**: *Despertar*, *Capas de fase*, *Rotores*, *Laberinto teseráctico* y *Ruptura dimensional*.
+- **Mecánicas 4D**: desplazarse por W revela plataformas y muros; los **rotores** se giran 90° en XW, YW o ZW
+  para convertir longitud en W en puentes; las **cerraduras dimensionales** son un puzle de rotaciones de un teseracto;
+  los **Cazadores** atraviesan muros pero se mueven despacio por W.
+- **Laboratorio 4D**: teseracto, 16-celdas, 5-celdas, 24-celdas y duoprisma 6×6 con seis deslizadores de rotación,
+  perspectiva ajustable, matriz de rotación en vivo y corte por hiperplano.
+- Controles de teclado y ratón configurables, y controles táctiles (joystick, botones y deslizadores W / XW / YW / ZW).
+- Progreso, partida en curso, ajustes y teclas guardados en `localStorage`.
+
+| Acción | Teclas por defecto |
+| --- | --- |
+| Moverse / saltar | `WASD` o flechas / `Espacio` |
+| Bajar / subir en W | `Q` / `E` |
+| Girar rotor en XW · YW · ZW | `1` · `2` · `3` (con `Mayús`, sentido contrario) |
+| Interactuar · Pulso · Visión 4D | `F` · `G` · `V` |
+| Volver a la baliza · Pausa | `R` · `Esc` o `P` |
