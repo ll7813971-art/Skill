@@ -23,5 +23,6 @@ No necesita instalar nada: ábrelo en el navegador y a jugar.
 | --- | --- |
 | Saltar / volar | `Espacio`, `↑`, `W`, clic o toque (mantén pulsado para seguir saltando) |
 | Pausa | `Esc` o `P` |
+| Silenciar | `M` |
 | Reiniciar | `R` |
 | Práctica: poner / quitar punto de control | `Z` / `X` |
