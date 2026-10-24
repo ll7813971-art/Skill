@@ -461,7 +461,7 @@ function step(s, hold) {
   const press = hold && !p.held; p.held = hold;
   if (press) { p.buf = true; p.jb = .1; } else if (!hold) p.buf = false;
   const m = p.mode;
-  if (p.buf && m !== 'wave') { const o = findOrb(s); if (o) { useOrb(s, o); p.buf = false; p.jb = 0; } }
+  if ((p.buf || hold) && m !== 'wave') { const o = findOrb(s); if (o) { useOrb(s, o); p.buf = false; p.jb = 0; } }
   let gs = p.gs; const spd = SPEEDS[p.spd], gr = p.grounded;
   switch (m) {
     case 'cube':
@@ -534,11 +534,11 @@ function level1() {
   const a = mk();
   // Parte 1 — cubo
   a.S(16).S(26).S(34, 0, 2);
-  a.B(50, 0, 5, 1).S(57, 0, 2);
+  a.B(50, 0, 5, 1).S(58, 0, 2);
   a.B(64, 0, 2, 1).B(66, 0, 8, 2).S(70, 2);
   a.S(79, 0, 2);
-  a.P(88).B(92, 2, 6, 1).S(90, 0, 9);
-  a.S(110, 0, 5).O(111, 2);
+  a.P(88).B(92, 1, 6, 1).S(90, 0, 9);
+  a.S(110, 0, 4).O(110.5, 2);
   a.S(122).B(129, 0, 2, 1);
   // Parte 2 — nave
   a.M(138, 'ship', 0);
@@ -1063,6 +1063,7 @@ function render(dt) {
     // rotación visual
     const spd = SPEEDS[p.spd];
     if (!p.dead && !p.won) {
+      if (Math.abs(sc.rot) > TAU) sc.rot %= TAU; // evita que los giros se acumulen
       if (p.mode === 'cube') {
         if (p.grounded) { const q = Math.PI / 2, tgt = Math.round(sc.rot / q) * q; sc.rot = lerp(sc.rot, tgt, 1 - Math.exp(-dt * 30)); }
         else sc.rot += p.gs * 7.1 * dt;
@@ -1403,6 +1404,7 @@ function gameTick(sc) {
         addParts(sc, o.x + .5, o.y + .5, 10, [c, '#fff'], 5, .4, .14); AU.fx(e.t); break;
       }
       case 'portal': case 'grav': {
+        if (e.t === 'portal') sc.rot = 0; // el vehículo nuevo empieza recto, sin heredar los giros del anterior
         const o = e.a, c = o.k === 'M' ? PORTAL_COL[o.mode] : (o.g === 1 ? '#3fa9ff' : '#ffe03f');
         sc.rings.push({ x: p.x, y: p.y, r0: .3, r1: 2, t: 0, max: .4, col: c }); sc.flash = 1; sc.flashCol = c; AU.fx(e.t); break;
       }
