@@ -6,14 +6,22 @@ No necesita instalar nada: ábrelo en el navegador y a jugar.
 ## Contenido
 
 - **Menú de inicio** con escena animada, selección de niveles, garaje y pantalla de ayuda.
-- **3 niveles** de dificultad creciente:
+- **8 niveles** de dificultad creciente (cada uno con su música y sus colores):
   - *Primeros Pasos* (Fácil): cubo y nave.
   - *Ritmo Nocturno* (Normal): cubo, bola, gravedad invertida, OVNI y velocidad x2.
   - *Ruta Electrónica* (Difícil): cubo, onda, robot, araña y nave a velocidad x2.
+  - *Salto Cósmico* (Normal): cubo, nave y bola.
+  - *Torre Neón* (Difícil): cubo, OVNI, robot y gravedad invertida a x2.
+  - *Eco Digital* (Más difícil): onda, araña y bola.
+  - *Tormenta Polar* (Insano): nave y onda a x2, robot, OVNI y cubo a x3.
+  - *Abismo Final* (Demonio): los 7 vehículos seguidos.
 - **7 vehículos**: cubo, nave, bola, OVNI, onda, robot y araña.
 - Orbes, plataformas de salto, portales de vehículo, de gravedad y de velocidad.
 - **Modo práctica** con puntos de control automáticos y manuales.
 - Garaje para elegir la cara del cubo y los colores (se guarda en el navegador).
+- **Ajustes**: volumen de música y efectos, barra y porcentaje de progreso, partículas,
+  sacudida, decoración al ritmo, calidad gráfica, puntos de control automáticos,
+  mostrar hitboxes y borrar el progreso.
 - Récords por nivel, música y efectos de sonido sintetizados (sin archivos externos).
 - Funciona con teclado, ratón y pantalla táctil.
 
